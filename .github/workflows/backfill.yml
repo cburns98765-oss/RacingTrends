@@ -1,22 +1,24 @@
 name: Backfill history
 
-# Run once by hand (Actions tab -> Backfill history -> Run workflow) to load past seasons.
-# Each year/region is scraped in its own job, then everything is merged into data/history/races.csv.gz.
+# Run by hand (Actions tab -> Backfill history -> Run workflow) to load past seasons.
+# Each quarter of each year/region is its own job (rpscrape-community is rate limited, so a whole
+# year would outlast GitHub's 6-hour job limit). Parts are merged into data/history/races.csv.gz.
+# Safe to re-run: races already in the history are just updated.
 on:
   workflow_dispatch:
     inputs:
       from_year:
         description: "First year"
-        default: "2015"
+        default: "2016"
       to_year:
-        description: "Last year (the current year is cut off at yesterday)"
+        description: "Last year (the current year stops at yesterday)"
         default: "2026"
       regions:
         description: "Regions"
         default: "gb ire"
       parallel:
-        description: "Jobs at once (keep low to avoid being blocked)"
-        default: "3"
+        description: "Jobs at once (each runs on its own GitHub server)"
+        default: "6"
 
 permissions:
   contents: write
@@ -34,16 +36,26 @@ jobs:
       - id: m
         run: |
           python3 - <<'EOF' >> "$GITHUB_OUTPUT"
-          import json
+          import json, datetime
           f, t = int("${{ inputs.from_year }}"), int("${{ inputs.to_year }}")
           regions = "${{ inputs.regions }}".split()
-          print("matrix=" + json.dumps({"include": [{"year": y, "region": r} for y in range(t, f - 1, -1) for r in regions]}))
+          yday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+          q = [("01-01", "03-31"), ("04-01", "06-30"), ("07-01", "09-30"), ("10-01", "12-31")]
+          inc = []
+          for y in range(t, f - 1, -1):
+              for i, (a, b) in enumerate(q, 1):
+                  start, end = f"{y}-{a}", min(f"{y}-{b}", yday)
+                  if start > yday:
+                      continue
+                  for r in regions:
+                      inc.append({"label": f"{y}-Q{i}", "start": start, "end": end, "region": r})
+          print("matrix=" + json.dumps({"include": inc}))
           EOF
 
   scrape:
     needs: plan
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 350
     strategy:
       fail-fast: false
       max-parallel: ${{ fromJSON(inputs.parallel) }}
@@ -52,21 +64,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Scrape ${{ matrix.region }} ${{ matrix.year }}
+          python-version: "3.13"
+      - name: Scrape ${{ matrix.region }} ${{ matrix.label }}
         env:
           REGIONS: ${{ matrix.region }}
         run: |
           bash scripts/rp.sh setup
-          end="${{ matrix.year }}-12-31"
-          yday="$(TZ=Europe/London date -d yesterday +%F)"
-          [[ "$end" > "$yday" ]] && end="$yday"
-          bash scripts/rp.sh results "${{ matrix.year }}-01-01" "$end"
+          bash scripts/rp.sh results "${{ matrix.start }}" "${{ matrix.end }}"
           ls -la work
-          python3 -m trends --history "part_${{ matrix.region }}_${{ matrix.year }}.csv.gz" history work/results_*.csv
+          python3 -m trends --history "part_${{ matrix.region }}_${{ matrix.label }}.csv.gz" history work/results_*.csv
       - uses: actions/upload-artifact@v4
         with:
-          name: part-${{ matrix.region }}-${{ matrix.year }}
+          name: part-${{ matrix.region }}-${{ matrix.label }}
           path: part_*.csv.gz
           retention-days: 7
 
@@ -78,7 +87,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - uses: actions/download-artifact@v4
         with:
           pattern: part-*
