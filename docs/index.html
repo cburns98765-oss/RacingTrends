@@ -70,7 +70,7 @@ select.tab option{color:var(--ink)}
 .race.open .rbody{display:block}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:18px}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.rhead{grid-template-columns:56px minmax(0,1fr)}.rside{grid-column:1/-1;justify-content:flex-start}}
-@media (max-width:560px){.brand span{display:none}.bar{gap:10px}.tab{padding:7px 10px;font-size:13px}.wrap{padding:0 12px}.rbody{padding:12px}.search{min-width:0;width:100%}.hm{display:none}td,th{padding:6px 5px}}
+@media (max-width:560px){.brand span{display:none}.bar{gap:10px}.tab{padding:7px 10px;font-size:13px}.wrap{padding:0 12px}.rbody{padding:12px}.search{min-width:0;width:100%}.hm{display:none}td,th{padding:6px 3px}.rbody{padding:10px 8px}.cell{min-width:0;padding:3px 5px}.sc{min-width:0;padding:3px 6px;font-size:15px}.horse small{font-size:11px}.bm{display:flex!important;margin-top:4px}}
 h3{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
 .ins{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
 .ins li{padding:8px 10px;border-radius:8px;background:#f7f5ef;border-left:3px solid #cfc8b6;font-size:13px}
@@ -92,7 +92,24 @@ tr:last-child td{border-bottom:0}
 .dots{display:flex;gap:3px}
 .dots b{width:9px;height:9px;border-radius:50%;background:#e2ddd0;display:block}
 .dots b.on{background:var(--turf)}
-.bonus{font-size:11px;font-weight:700;color:#7a5a12;background:var(--gold-soft);border-radius:5px;padding:0 5px;margin-left:3px}
+.pill.top{background:var(--turf);color:#fff}
+.pill.tie{background:#ece7da;color:#6b5f45}
+table.rt td{vertical-align:middle}
+.cell{display:inline-block;min-width:34px;padding:3px 7px;border-radius:6px;font-weight:600;text-align:center;line-height:1.25}
+.cell small{display:block;font-size:10.5px;font-weight:500;opacity:.8}
+.cell.ok{background:var(--turf-soft);color:var(--turf)}
+.cell.no{background:var(--red-soft);color:var(--red)}
+.b{font-size:11px;font-weight:700;border-radius:5px;padding:2px 7px;background:var(--gold-soft);color:#7a5a12;white-space:nowrap}
+.bm{display:none}
+.b.star{background:var(--gold);color:#1d1503}
+.sc{display:inline-block;min-width:46px;padding:4px 8px;border-radius:8px;font:700 16px "Barlow Condensed",sans-serif;text-align:center;background:#eee;color:#777}
+.sc i{font-style:normal;font-size:12px;opacity:.7}
+.sc.s1{background:#e8efe9;color:#3f6b55}
+.sc.s2{background:var(--turf-2);color:#fff}
+.sc.s3{background:var(--gold);color:#1d1503}
+tr.topfit td{background:#eef6f1}
+tr.topfit td:first-child{box-shadow:inset 3px 0 0 var(--turf)}
+tr.tied td:first-child{box-shadow:inset 3px 0 0 #cfc8b6}
 tr.won td{background:#fff7e2}
 tr.won .horse::after{content:" ✓ won";color:var(--gold);font-size:12px}
 .scroll{overflow-x:auto}
@@ -208,15 +225,28 @@ async function render(){
   });
 }
 
+function topInfo(r){  // single best trend fit, or a tie
+  if (r.summary.n < 3 || !r.runners.length) return null;
+  const score = Math.max(...r.runners.map(x => x.score));
+  if (score <= 0) return null;
+  const tops = r.runners.filter(x => x.score === score);
+  return {score, max: r.max_core + 4, tied: tops.length, clear: tops.length === 1, horse: tops[0].horse};
+}
+
 function raceHTML(r, res, q){
   const n = r.summary.n;
   const tags = [r.class ? `Class ${r.class}` : "", distTxt(r), TYPE[r.type], r.surface === "aw" ? "AW" : "", `${r.runners.length} runners`].filter(Boolean)
     .map(t => `<span class="tag">${esc(t)}</span>`).join("") + (r.hcap ? `<span class="tag hc">Handicap</span>` : "") +
     (r.pattern ? `<span class="tag hc">${esc(r.pattern.replace(/\b\w/g,c=>c.toUpperCase()))}</span>` : "");
-  const top = r.runners[0];
+  const t = topInfo(r);
   let side = n ? `<span class="pill n">${n} renewal${n>1?"s":""}</span>` : `<span class="pill none">No past renewals</span>`;
-  if (n >= 3 && top && top.score > 0 && !res) side += `<span class="pill n">Top fit: ${esc(top.horse)}</span>`;
-  if (res) side += `<span class="pill ${res.top_scored_won?"hit":"res"}">Won: ${esc(res.winner)} ${esc(res.sp||"")}${res.top_scored_won?" · top fit":""}</span>`;
+  if (t && !res) side += t.clear
+    ? `<span class="pill top">Top fit: ${esc(t.horse)} · ${t.score}/${t.max}</span>`
+    : `<span class="pill tie">No clear fit · ${t.tied} tied on ${t.score}</span>`;
+  if (res) {
+    const hit = res.clear_top_won ?? res.top_scored_won;
+    side += `<span class="pill ${hit?"hit":"res"}">Won: ${esc(res.winner)} ${esc(res.sp||"")}${hit?" · top fit":""}</span>`;
+  }
   const open = S.open.has(r.race_id) || (q && r.runners.some(x => [x.horse,x.trainer,x.jockey].join(" ").toLowerCase().includes(q)));
   return `<article class="race ${open?"open":""}" data-id="${esc(r.race_id)}">
     <div class="rhead"><div class="off">${esc(r.off)}</div>
@@ -237,19 +267,26 @@ function bodyHTML(r){
         <td class="num">${x.age??"–"}</td><td class="num">${x.from_top==null?"–":(x.from_top===0?"top":x.from_top+"lb")}</td><td class="num hm">${x.or??"–"}</td>
         <td class="num">${esc(x.sp||"–")}<small class="dim" style="display:block;font-size:11px" title="${esc(x.fav||"")}">${favTxt(x)}</small></td></tr>`).join("")}
       </tbody></table></div><p class="note">Hover a year for the past race's name.</p>` : "";
-  const core = new Set(["age","wt","or"]);
-  const runners = `<h3>Runners${n>=3?" · ranked by trend fit":""}</h3><div class="scroll"><table><thead><tr><th>#</th><th>Horse</th><th class="num">Age</th><th class="num">Wgt</th><th class="num hm">OR</th><th class="hm">Form</th><th>Trend fit</th><th class="num">Score</th></tr></thead><tbody>
+  const t = topInfo(r), scored = n >= 3;
+  const max = r.max_core + 4;
+  const cell = (x, k, text) => {
+    const f = x.flags.find(f => f.k === k);
+    return `<td class="num"><span class="cell ${f ? (f.ok ? "ok" : "no") : ""}">${text}</span></td>`;
+  };
+  const wtTxt = x => `${stlb(x.lbs)}<small>${x.from_top==null?"":(x.from_top===0?"top":"-"+x.from_top+"lb")}</small>`;
+  const runners = `<h3>Runners${scored?" · ranked by trend fit":""}</h3><div class="scroll"><table class="rt"><thead><tr><th class="hm">#</th><th>Horse</th><th class="num">Age</th><th class="num">Weight</th><th class="num">OR</th><th class="hm">Form</th><th class="hm">Bonus</th><th class="num">Score</th></tr></thead><tbody>
     ${r.runners.map(x=>{
-      const flags = x.flags.map(f=>`<span class="f ${f.k==="cdwin"?"star":(f.ok?"ok":"no")}">${f.ok?"":"✕ "}${esc(f.txt)}</span>`).join("");
-      const fit = x.flags.filter(f=>core.has(f.k)&&f.ok).length, bonus = x.score - fit;
-      const dots = Array.from({length:r.max_core},(_,i)=>`<b class="${i<fit?"on":""}"></b>`).join("") + (bonus>0?`<span class="bonus">+${bonus}</span>`:"");
-      return `<tr class="${x.won?"won":""}"><td class="dim">${x.number??""}</td>
-        <td class="horse">${esc(x.horse)}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small></td>
-        <td class="num">${x.age??""}</td><td class="num">${stlb(x.lbs)}</td><td class="num hm">${x.or??"–"}</td>
-        <td class="dim hm">${esc(x.form||"")}</td><td><div class="fit">${flags||'<span class="dim">–</span>'}</div></td>
-        <td><div class="score"><div class="dots">${dots}</div><b>${n>=3||x.score?x.score:""}</b></div></td></tr>`;}).join("")}
+      const has = k => x.flags.some(f => f.k === k && f.ok);
+      const bonus = [has("cdwin") ? `<span class="b star">★ Won it</span>` : "", has("trainer") ? `<span class="b">Trainer</span>` : "", has("jockey") ? `<span class="b">Jockey</span>` : ""].join("");
+      const isTop = t && x.score === t.score && t.score > 0;
+      const lvl = !scored ? "" : (x.score >= r.max_core + 1 ? "s3" : x.score >= r.max_core && x.score > 0 ? "s2" : x.score > 0 ? "s1" : "s0");
+      return `<tr class="${x.won?"won":""} ${isTop && t.clear ? "topfit" : ""} ${isTop && !t.clear ? "tied" : ""}"><td class="dim hm">${x.number??""}</td>
+        <td class="horse">${esc(x.horse)}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small>${bonus?`<div class="fit bm">${bonus}</div>`:""}</td>
+        ${cell(x,"age",x.age??"–")}${cell(x,"wt",wtTxt(x))}${cell(x,"or",x.or??"–")}
+        <td class="dim hm">${esc(x.form||"")}</td><td class="hm"><div class="fit">${bonus||'<span class="dim">–</span>'}</div></td>
+        <td class="num">${scored||x.score?`<span class="sc ${lvl}">${x.score}<i>/${max}</i></span>`:""}</td></tr>`;}).join("")}
     </tbody></table></div>
-    ${n>=3?`<p class="note">Dots = fits the winners' profile (age, weight off top${r.hcap?", rating":""}). +N = bonuses: trainer or jockey won a past renewal (+1 each), won this race before (+2). Red ✕ = outside the profile.</p>`:""}`;
+    ${scored?`<p class="note"><span class="cell ok">green</span> fits the past winners' profile, <span class="cell no">red</span> doesn't. Score: 1 point each for age, weight${r.hcap?", rating":""}; +1 if the trainer, +1 if the jockey won a past running; +2 if the horse won it before. ${t && !t.clear ? `${t.tied} runners share the top score, so there's no clear fit.` : ""}</p>`:""}`;
   return `<div class="grid2"><div>${ins}${ren}</div><div>${runners}</div></div>`;
 }
 
@@ -262,13 +299,13 @@ async function renderPerf(){
   const maxStrike = Math.max(...p.by_score.map(b=>b.strike), 1);
   $("#app").innerHTML = `<div class="kpis">
       <div class="kpi"><span>Scored races settled</span><b>${p.races}</b></div>
-      <div class="kpi"><span>Top trend fit won</span><b>${p.top_scored_won}</b></div>
-      <div class="kpi"><span>Top-fit strike rate</span><b>${rate}%</b></div></div>
+      <div class="kpi"><span>Races with a clear top fit</span><b>${p.top_races}</b></div>
+      <div class="kpi"><span>Clear top fit won</span><b>${p.top_scored_won} · ${rate}%</b></div></div>
     <div class="panel"><h3>Strike rate by trend score</h3>
       ${p.by_score.map(b=>`<div class="barrow"><div><b>Score ${b.score}</b></div><div class="track"><i style="width:${(100*b.strike/maxStrike).toFixed(1)}%"></i></div><div class="num">${b.wins}/${b.runners} · ${b.strike}%</div></div>`).join("")}
       <p class="note">If higher scores don't win more often than lower ones over a few hundred races, the trends aren't adding anything for that race type.</p></div>
-    <div class="panel"><h3>By day</h3><table><thead><tr><th>Date</th><th class="num">Scored races</th><th class="num">Top fit won</th></tr></thead><tbody>
-      ${p.days.slice().reverse().map(d=>`<tr><td><a href="#${d.date}">${nice(d.date)}</a></td><td class="num">${d.races}</td><td class="num">${d.top_won}</td></tr>`).join("")}</tbody></table></div>`;
+    <div class="panel"><h3>By day</h3><table><thead><tr><th>Date</th><th class="num">Scored races</th><th class="num">Clear top fit</th><th class="num">Won</th></tr></thead><tbody>
+      ${p.days.slice().reverse().map(d=>`<tr><td><a href="#${d.date}">${nice(d.date)}</a></td><td class="num">${d.races}</td><td class="num">${d.top_races||0}</td><td class="num">${d.top_won}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 boot();

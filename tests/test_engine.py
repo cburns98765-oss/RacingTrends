@@ -71,10 +71,11 @@ class EndToEnd(unittest.TestCase):
         cls.tmp = tempfile.mkdtemp()
         hist = os.path.join(cls.tmp, "h.csv.gz")
         fx = os.path.join(ROOT, "tests", "fixtures")
-        run = lambda *a: subprocess.check_call([sys.executable, "-m", "trends", "--history", hist, *a], cwd=ROOT, stdout=subprocess.DEVNULL)
+        env = dict(os.environ, RT_SITE=os.path.join(cls.tmp, "site"))  # never touch the live docs/
+        run = lambda *a: subprocess.check_call([sys.executable, "-m", "trends", "--history", hist, *a], cwd=ROOT, env=env, stdout=subprocess.DEVNULL)
         run("history", os.path.join(fx, "southwell_history.csv"))
         run("cards", os.path.join(fx, "southwell_racecards_2026-11-24.json"))
-        with open(os.path.join(ROOT, "docs", "data", "cards", "2026-11-24.json")) as fh:
+        with open(os.path.join(cls.tmp, "site", "data", "cards", "2026-11-24.json")) as fh:
             cls.doc = json.load(fh)
         cls.races = {r["off"]: r for m in cls.doc["meetings"] for r in m["races"]}
 

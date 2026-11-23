@@ -18,7 +18,7 @@ from . import util as U
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HISTORY = os.path.join(ROOT, "data", "history", "races.csv.gz")
-SITE = os.path.join(ROOT, "docs")
+SITE = os.environ.get("RT_SITE") or os.path.join(ROOT, "docs")  # tests point this at a temp dir
 CARDS = os.path.join(SITE, "data", "cards")
 KEEP_DAYS = 60
 
@@ -115,11 +115,13 @@ def cmd_settle(args):
                 for x in race["runners"]:
                     x["won"] = U.norm_name(x["horse"]) == win or (x.get("horse_id") and x["horse_id"] == r["win_horse_id"])
                 top = max((x["score"] for x in race["runners"]), default=0)
+                clear = top > 0 and sum(1 for x in race["runners"] if x["score"] == top) == 1
                 w = next((x for x in race["runners"] if x.get("won")), None)
                 doc["results"][race["race_id"]] = {
                     "winner": r["win_horse"], "sp": r["win_sp"], "fav_won": r["fav_won"],
                     "winner_score": w["score"] if w else None, "top_score": top,
                     "top_scored_won": bool(w and w["score"] == top and top > 0),
+                    "clear_top": clear, "clear_top_won": bool(clear and w and w["score"] == top),
                     "scored": race["summary"]["n"] >= engine.MIN_TRENDS,
                 }
                 settled += 1
@@ -166,10 +168,12 @@ def _write_performance():
                 for x in race["runners"]:
                     by_score[x["score"]][0] += 1
                     by_score[x["score"]][1] += int(bool(x.get("won")))
-                if res["top_scored_won"]:
-                    top_won += 1
-                    day["top_won"] += 1
-                top_races += 1
+                if res.get("clear_top"):  # only races with one clear top fit count
+                    top_races += 1
+                    day["top_races"] = day.get("top_races", 0) + 1
+                    if res.get("clear_top_won"):
+                        top_won += 1
+                        day["top_won"] += 1
         if day["races"]:
             days.append(day)
     perf = {
