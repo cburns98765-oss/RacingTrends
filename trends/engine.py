@@ -48,8 +48,14 @@ def _dist_tol(race_type, dist):
     return 0.6 if (dist or 0) <= 8 else 1.25
 
 
+def _season(d, race_type):
+    """Flat: calendar year. Jumps: season starting in May (Nov 2026 and Mar 2027 are both 2026)."""
+    return d.year if race_type == "flat" else (d.year if d.month >= 5 else d.year - 1)
+
+
 def find_renewals(card, idx):
     d = U.parse_date(card["date"])
+    card_season = _season(d, card["type"])
     keys = [U.course_key(card.get("course_id"), card.get("course")), U.course_key(None, card.get("course"))]
     pool, seen = [], set()
     for k in keys:
@@ -61,6 +67,8 @@ def find_renewals(card, idx):
     for r in pool:
         rd = r["_date"]
         if rd >= d or (d - rd).days > 366 * YEARS_BACK + 30:
+            continue
+        if _season(rd, card["type"]) >= card_season:  # earlier this season isn't a past renewal
             continue
         if r["type"] != card["type"] or r["surface"] != card["surface"]:
             continue
@@ -87,8 +95,7 @@ def find_renewals(card, idx):
         ck = set(card.get("kinds") or [])
         kind_miss = len(ck ^ r["_kinds"])
         score = 100 - dd * 12 - cdiff * 10 - gap * 0.6 - kind_miss * 7
-        # "season" bucket: jumps seasons cross the new year, so bucket by (date - ~6 months) for NH
-        season = (rd.year if card["type"] == "flat" else (rd.year if rd.month >= 5 else rd.year - 1))
+        season = _season(rd, card["type"])
         best = cand_by_year.get(season)
         if best is None or score > best["_score"]:
             r = dict(r)

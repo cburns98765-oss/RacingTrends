@@ -8,7 +8,9 @@ import gzip
 import io
 import json
 import os
+import re
 from datetime import datetime
+from fractions import Fraction
 
 from . import util as U
 
@@ -21,25 +23,69 @@ RACE_FIELDS = [
 ]
 
 
-def _open_text(path):
-    """Text handle that copes with UTF-8 or Windows-1252 files (RacingFormBook uses the latter)."""
-    raw = gzip.open(path, "rb") if str(path).endswith(".gz") else open(path, "rb")
-    head = raw.peek(65536)[:65536] if hasattr(raw, "peek") else b""
-    try:
-        head.decode("utf-8")
-        enc = "utf-8-sig"
-    except UnicodeDecodeError:
-        enc = "cp1252"
-    return io.TextIOWrapper(raw, encoding=enc, errors="replace", newline="")
+class _open_text:
+    """Iterate a (gzipped) CSV as text, line by line: UTF-8 where valid, otherwise Windows-1252
+    (RacingFormBook files are mostly ASCII with the odd cp1252 '£' far into the file)."""
+
+    def __init__(self, path):
+        self.raw = gzip.open(path, "rb") if str(path).endswith(".gz") else open(path, "rb")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.raw.close()
+
+    def __iter__(self):
+        first = True
+        for line in self.raw:
+            if first:
+                line, first = line.removeprefix(b"\xef\xbb\xbf"), False
+            try:
+                yield line.decode("utf-8")
+            except UnicodeDecodeError:
+                yield line.decode("cp1252", errors="replace")
 
 
 # RacingFormBook "SFF" results files -> the column names the summariser understands
 SFF_TYPES = {"h": "Hurdle", "c": "Chase", "b": "NH Flat", "": "Flat"}
 
 
-def _sff_row(r):
+def _rfb_region(course):
+    if "(IRE)" in course:
+        return "ire"
+    if "(" not in course or "(NI)" in course:
+        return "gb"  # Northern Ireland races under the BHA
+    return course[course.rfind("(") + 1:-1].lower()
+
+
+def _duo_rows(details_path, reader):
+    """RacingFormBook 'Duo': <year>_Main.csv (one row per race) + <year>_Details.csv (one per runner)."""
+    main_path = re.sub(r"_Details(\.csv)$", r"_Main\1", details_path, flags=re.I)
+    races = {}
+    with _open_text(main_path) as fh:
+        for m in csv.DictReader(fh):
+            races[m["Id"].strip()] = m
+    for r in reader:
+        m = races.get((r.get("MainID") or "").strip())
+        if not m:
+            continue
+        frm, to = U.to_float(r.get("SPFrom")), U.to_float(r.get("SPTo"))
+        st, lb = U.to_int(r.get("Stone")), U.to_int(r.get("Lbs"))
+        yield _sff_row({
+            "Id": m["Id"].strip(), "Course": m["Course"].strip(), "RaceDate": m["Date"], "RaceTime": m["Time"],
+            "Race": m["RaceDesc"], "Type": "", "Class": m["Class"], "Ran": m["Ran"], "Distance": m["Distance"],
+            "Yards": "", "Going": m["Going"], "Limit": m.get("Limit", ""), "FPos": r["FPos"],
+            "HorseName": r["HorseName"], "Sp": (frm / to) if (frm and to) else "",
+            "SpText": ("evs" if frm == to else f"{int(frm)}/{int(to)}") if (frm and to) else "", "Age": r["Age"],
+            "WeightLBS": (st * 14 + lb) if st is not None and lb is not None else "", "Favs": r["Favs"],
+            "Trainer": r["Trainer"], "Jockey": r["Jockey"], "OR": r.get("Or", ""),
+        }, type_from_name=True)
+
+
+def _sff_row(r, type_from_name=False):
     course = (r.get("Course") or "").strip()
-    region = "ire" if "(IRE)" in course else ("gb" if "(" not in course else course[course.rfind("(") + 1:-1].lower())
+    region = _rfb_region(course)
     try:
         d = datetime.strptime(r["RaceDate"].strip(), "%d-%b-%y").date().isoformat()
     except (ValueError, KeyError):
@@ -48,13 +94,20 @@ def _sff_row(r):
     dec = round(ratio + 1, 3) if ratio is not None else None
     fav = (r.get("Favs") or "").strip()
     fav_tag = {"Fav": "F", "JFav": "J", "CFav": "C"}.get(fav, "")
-    sp = (U.frac_from_dec(dec) + fav_tag) if dec else ""
+    if ratio is not None:
+        fr = Fraction(ratio).limit_denominator(50)
+        sp_txt = r.get("SpText") or ("evs" if fr == 1 else f"{fr.numerator}/{fr.denominator}")
+    sp = (sp_txt + fav_tag) if dec else ""
     going = r.get("Going", "")
     yards = U.to_float(r.get("Yards"))
+    if not yards:
+        f = U.dist_furlongs(r.get("Distance"))
+        yards = f * 220 if f else None
     return {
         "race_id": f"rfb{r.get('Id', '')}", "date": d, "region": region, "course": course,
         "off": r.get("RaceTime", ""), "race_name": r.get("Race", ""),
-        "type": SFF_TYPES.get((r.get("Type") or "").strip().lower(), "Flat"),
+        "type": (U.race_type(None, r.get("Race", "")) if type_from_name
+                 else SFF_TYPES.get((r.get("Type") or "").strip().lower(), "Flat")),
         "surface": "aw" if "(aw" in going.lower() else "turf", "class": r.get("Class", ""),
         "dist_f": round(yards / 220, 2) if yards else "", "dist": r.get("Distance", ""),
         "going": going, "ran": r.get("Ran", ""), "pos": r.get("FPos", ""), "horse": r.get("HorseName", ""),
@@ -69,6 +122,11 @@ def _rows(paths, seen_cols):
             reader = csv.DictReader(fh)
             cols = reader.fieldnames or []
             seen_cols.update(cols)
+            if "MainID" in cols:                       # Duo runner file (joins its _Main file)
+                yield from _duo_rows(str(p), reader)
+                continue
+            if "RaceDesc" in cols and "FPos" not in cols:  # Duo race file: read via its _Details file
+                continue
             sff = "FPos" in cols and "HorseName" in cols
             for row in reader:
                 yield _sff_row(row) if sff else row
