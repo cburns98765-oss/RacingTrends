@@ -1,0 +1,98 @@
+name: Backfill history
+
+# Run once by hand (Actions tab -> Backfill history -> Run workflow) to load past seasons.
+# Each year/region is scraped in its own job, then everything is merged into data/history/races.csv.gz.
+on:
+  workflow_dispatch:
+    inputs:
+      from_year:
+        description: "First year"
+        default: "2015"
+      to_year:
+        description: "Last year (the current year is cut off at yesterday)"
+        default: "2026"
+      regions:
+        description: "Regions"
+        default: "gb ire"
+      parallel:
+        description: "Jobs at once (keep low to avoid being blocked)"
+        default: "3"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: racing-data
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          f, t = int("${{ inputs.from_year }}"), int("${{ inputs.to_year }}")
+          regions = "${{ inputs.regions }}".split()
+          print("matrix=" + json.dumps({"include": [{"year": y, "region": r} for y in range(t, f - 1, -1) for r in regions]}))
+          EOF
+
+  scrape:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.parallel) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scrape ${{ matrix.region }} ${{ matrix.year }}
+        env:
+          REGIONS: ${{ matrix.region }}
+        run: |
+          bash scripts/rp.sh setup
+          end="${{ matrix.year }}-12-31"
+          yday="$(TZ=Europe/London date -d yesterday +%F)"
+          [[ "$end" > "$yday" ]] && end="$yday"
+          bash scripts/rp.sh results "${{ matrix.year }}-01-01" "$end"
+          ls -la work
+          python3 -m trends --history "part_${{ matrix.region }}_${{ matrix.year }}.csv.gz" history work/results_*.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: part-${{ matrix.region }}-${{ matrix.year }}
+          path: part_*.csv.gz
+          retention-days: 7
+
+  merge:
+    needs: scrape
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: part-*
+          merge-multiple: true
+          path: parts
+      - name: Merge into history
+        run: |
+          ls -la parts || true
+          python3 -m trends merge parts/*.csv.gz
+      - name: Commit
+        run: |
+          git config user.name "racing-trends-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/history
+          git diff --cached --quiet && { echo "no changes"; exit 0; }
+          git commit -m "History backfill ${{ inputs.from_year }}-${{ inputs.to_year }}"
+          git pull --rebase --autostash && git push

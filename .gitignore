@@ -1,0 +1,6 @@
+work/
+vendor/
+__pycache__/
+*.pyc
+docs/standalone.html
+tests/fixtures/

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Racing Trends</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f1ea; --panel:#ffffff; --ink:#15201b; --muted:#66716b; --line:#e3ded2;
+  --turf:#0f4d33; --turf-2:#1b6b48; --turf-soft:#e3efe8; --gold:#c9962b; --gold-soft:#f6ecd4;
+  --red:#b2412e; --red-soft:#f7e3de; --chip:#efebe1;
+  --radius:12px; --shadow:0 1px 2px rgba(20,32,27,.06),0 4px 14px rgba(20,32,27,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px}
+
+/* header */
+header{background:var(--turf);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.bar{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:24px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.brand i{display:inline-block;width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--gold) 0 25%,#fff 0 50%,var(--gold) 0 75%,#fff 0)}
+.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto}
+.tab{background:transparent;border:0;color:#cfe3d8;padding:8px 14px;border-radius:999px;font-weight:600;white-space:nowrap}
+.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+.tab.on{background:#fff;color:var(--turf)}
+select.tab{appearance:none;-webkit-appearance:none;border:1px solid rgba(255,255,255,.25)}
+select.tab option{color:var(--ink)}
+.sub{background:#0c3f2a;color:#bcd6c8;font-size:12px}
+.sub .wrap{display:flex;gap:14px;align-items:center;min-height:30px;flex-wrap:wrap}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip small{color:var(--muted);font-weight:500;margin-left:4px}
+.chip.on small{color:#c9d2cd}
+.spacer{flex:1}
+.toggle{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);user-select:none}
+.toggle input{accent-color:var(--turf);width:16px;height:16px}
+.search{border:1px solid var(--line);border-radius:999px;padding:7px 14px;background:var(--panel);min-width:200px;font:inherit}
+
+/* meeting & race */
+.meeting{margin:22px 0 8px}
+.meeting h2{font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px;display:flex;align-items:baseline;gap:10px}
+.meeting h2 span{font:500 13px Inter,sans-serif;color:var(--muted);text-transform:none;letter-spacing:0}
+.race{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.rhead{display:grid;grid-template-columns:70px 1fr auto;gap:14px;align-items:center;padding:14px 16px;cursor:pointer}
+.rhead:hover{background:#fbfaf6}
+.off{font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:700;color:var(--turf)}
+.rname{font-weight:700;font-size:15px}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.tag{background:var(--chip);border-radius:6px;padding:2px 7px;font-size:12px;color:#3d4842;font-weight:500}
+.tag.hc{background:var(--gold-soft);color:#7a5a12}
+.rside{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.pill{border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill.n{background:var(--turf-soft);color:var(--turf)}
+.pill.none{background:#eee;color:#888}
+.pill.res{background:var(--ink);color:#fff}
+.pill.hit{background:var(--gold);color:#1d1503}
+.chev{width:22px;height:22px;transition:transform .2s;color:var(--muted)}
+.race.open .chev{transform:rotate(180deg)}
+.rbody{display:none;border-top:1px solid var(--line);padding:16px}
+.race.open .rbody{display:block}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:18px}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.rhead{grid-template-columns:56px minmax(0,1fr)}.rside{grid-column:1/-1;justify-content:flex-start}}
+@media (max-width:560px){.brand span{display:none}.bar{gap:10px}.tab{padding:7px 10px;font-size:13px}.wrap{padding:0 12px}.rbody{padding:12px}.search{min-width:0;width:100%}.hm{display:none}td,th{padding:6px 5px}}
+h3{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
+.ins{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
+.ins li{padding:8px 10px;border-radius:8px;background:#f7f5ef;border-left:3px solid #cfc8b6;font-size:13px}
+.ins li.strong{background:var(--turf-soft);border-left-color:var(--turf);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid #f0ece3;vertical-align:top}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dim{color:var(--muted)}
+.horse{font-weight:700}
+.horse small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.fit{display:flex;flex-wrap:wrap;gap:4px}
+.f{font-size:11px;border-radius:5px;padding:2px 6px;font-weight:600;white-space:nowrap}
+.f.ok{background:var(--turf-soft);color:var(--turf)}
+.f.no{background:var(--red-soft);color:var(--red)}
+.f.star{background:var(--gold);color:#1d1503}
+.score{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.dots{display:flex;gap:3px}
+.dots b{width:9px;height:9px;border-radius:50%;background:#e2ddd0;display:block}
+.dots b.on{background:var(--turf)}
+.bonus{font-size:11px;font-weight:700;color:#7a5a12;background:var(--gold-soft);border-radius:5px;padding:0 5px;margin-left:3px}
+tr.won td{background:#fff7e2}
+tr.won .horse::after{content:" ✓ won";color:var(--gold);font-size:12px}
+.scroll{overflow-x:auto}
+.empty{padding:40px;text-align:center;color:var(--muted);background:var(--panel);border-radius:var(--radius);border:1px dashed var(--line);margin-top:20px}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* performance */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:36px;color:var(--turf);line-height:1.1}
+.kpi span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.barrow{display:grid;grid-template-columns:90px 1fr 120px;gap:10px;align-items:center;margin:6px 0;font-size:13px}
+.track{height:12px;background:#efebe1;border-radius:6px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--turf);border-radius:6px}
+footer{color:var(--muted);font-size:12px;padding:30px 0 50px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <div class="brand"><i></i><span>Racing Trends</span></div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+  <div class="sub"><div class="wrap" id="sub"></div></div>
+</header>
+
+<main class="wrap" id="app"></main>
+<footer class="wrap">Past-renewal trends for UK &amp; Irish racing. Renewals are the closest race of the same type, surface, distance, class band and handicap status at the same course within ±45 days of this date in each previous season (up to 10). Runners are scored only when 3+ renewals exist. Not betting advice.</footer>
+
+<!--BUNDLE-->
+<script>
+const S = {index:null, perf:null, cards:{}, view:null, meeting:"all", onlyTrends:false, q:"", open:new Set()};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const todayISO = () => new Date().toLocaleDateString("en-CA", {timeZone:"Europe/London"});
+const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+const nice = iso => new Date(iso + "T12:00:00Z").toLocaleDateString("en-GB", {weekday:"short", day:"numeric", month:"short"});
+const stlb = l => l ? `${Math.floor(l/14)}-${l%14}` : "";
+const furl = f => { if (!f) return ""; const hf = Math.round(f*2)/2, m = Math.floor(hf/8), r = hf - m*8; return (m ? m+"m" : "") + (r ? (Math.floor(r) || "") + (r % 1 ? "½" : "") + "f" : ""); };
+const distTxt = r => furl(r.dist_f) || String(r.dist||"");
+const ordinal = n => n + (["th","st","nd","rd"][(n%100-20)%10] || ["th","st","nd","rd"][n%100] || "th");
+const TYPE = {chase:"Chase", hurdle:"Hurdle", nhf:"NH Flat", flat:"Flat"};
+
+async function getJSON(path){
+  if (window.__BUNDLE__){
+    if (path === "data/index.json") return window.__BUNDLE__.index;
+    if (path === "data/performance.json") return window.__BUNDLE__.performance;
+    const m = path.match(/cards\/(.+)\.json/); return m ? window.__BUNDLE__.cards[m[1]] : null;
+  }
+  const r = await fetch(path + "?v=" + Date.now()); return r.ok ? r.json() : null;
+}
+
+async function boot(){
+  S.index = await getJSON("data/index.json") || {dates:[]};
+  const dates = S.index.dates.map(d => d.date);
+  const t = todayISO();
+  S.view = location.hash.slice(1) || (dates.includes(t) ? t : (dates.find(d => d >= t) || dates[dates.length-1] || t));
+  window.addEventListener("hashchange", () => { S.view = location.hash.slice(1) || S.view; S.meeting = "all"; render(); });
+  render();
+}
+
+function renderTabs(){
+  const t = todayISO(), tm = addDays(t, 1);
+  const dates = S.index.dates.map(d => d.date);
+  const past = dates.filter(d => d !== t && d !== tm).reverse();
+  let h = `<button class="tab ${S.view===t?"on":""}" data-v="${t}">Today</button>
+           <button class="tab ${S.view===tm?"on":""}" data-v="${tm}">Tomorrow</button>`;
+  if (past.length) h += `<select class="tab ${past.includes(S.view)?"on":""}" id="past"><option value="">Past days</option>${past.map(d=>`<option value="${d}" ${d===S.view?"selected":""}>${nice(d)}</option>`).join("")}</select>`;
+  h += `<button class="tab ${S.view==="perf"?"on":""}" data-v="perf">Performance</button>`;
+  $("#tabs").innerHTML = h;
+  $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => { location.hash = b.dataset.v; });
+  const p = $("#past"); if (p) p.onchange = () => p.value && (location.hash = p.value);
+}
+
+async function render(){
+  renderTabs();
+  if (S.view === "perf") return renderPerf();
+  if (!(S.view in S.cards)) S.cards[S.view] = await getJSON(`data/cards/${S.view}.json`);
+  const doc = S.cards[S.view];
+  $("#sub").innerHTML = doc
+    ? `<span>${nice(S.view)}</span><span>Cards updated ${esc(doc.generated)}</span>${doc.settled?`<span>Results ${esc(doc.settled)}</span>`:""}`
+    : `<span>${nice(S.view)}</span>`;
+  if (!doc){ $("#app").innerHTML = `<div class="empty">No cards for ${nice(S.view)} yet. They're added by the morning run.</div>`; return; }
+  const meetings = doc.meetings;
+  const total = meetings.reduce((a,m)=>a+m.races.length,0);
+  let h = `<div class="toolbar"><div class="chips">
+      <button class="chip ${S.meeting==="all"?"on":""}" data-m="all">All meetings<small>${total}</small></button>
+      ${meetings.map(m=>`<button class="chip ${S.meeting===m.course?"on":""}" data-m="${esc(m.course)}">${esc(m.course)}<small>${m.races.length}</small></button>`).join("")}
+    </div><div class="spacer"></div>
+    <label class="toggle"><input type="checkbox" id="only" ${S.onlyTrends?"checked":""}>Only races with 3+ renewals</label>
+    <input class="search" id="q" placeholder="Find a horse, trainer or jockey" value="${esc(S.q)}">
+  </div>`;
+  const q = S.q.trim().toLowerCase();
+  let shown = 0;
+  for (const m of meetings){
+    if (S.meeting !== "all" && m.course !== S.meeting) continue;
+    const races = m.races.filter(r => (!S.onlyTrends || r.summary.n >= 3) &&
+      (!q || r.runners.some(x => [x.horse,x.trainer,x.jockey].join(" ").toLowerCase().includes(q))));
+    if (!races.length) continue;
+    shown += races.length;
+    h += `<section class="meeting"><h2>${esc(m.course)} <span>${(m.region||"").toUpperCase()} · ${races[0].going ? esc(races[0].going) : ""}</span></h2>
+          ${races.map(r => raceHTML(r, doc.results?.[r.race_id], q)).join("")}</section>`;
+  }
+  if (!shown) h += `<div class="empty">No races match those filters.</div>`;
+  $("#app").innerHTML = h;
+  $("#app").querySelectorAll(".chip").forEach(b => b.onclick = () => { S.meeting = b.dataset.m; render(); });
+  $("#only").onchange = e => { S.onlyTrends = e.target.checked; render(); };
+  const qi = $("#q"); qi.oninput = e => { S.q = e.target.value; clearTimeout(S._t); S._t = setTimeout(() => { render(); const n=$("#q"); n.focus(); n.setSelectionRange(n.value.length,n.value.length); }, 250); };
+  $("#app").querySelectorAll(".rhead").forEach(el => el.onclick = () => {
+    const id = el.parentElement.dataset.id; el.parentElement.classList.toggle("open");
+    S.open.has(id) ? S.open.delete(id) : S.open.add(id);
+  });
+}
+
+function raceHTML(r, res, q){
+  const n = r.summary.n;
+  const tags = [r.class ? `Class ${r.class}` : "", distTxt(r), TYPE[r.type], r.surface === "aw" ? "AW" : "", `${r.runners.length} runners`].filter(Boolean)
+    .map(t => `<span class="tag">${esc(t)}</span>`).join("") + (r.hcap ? `<span class="tag hc">Handicap</span>` : "") +
+    (r.pattern ? `<span class="tag hc">${esc(r.pattern.replace(/\b\w/g,c=>c.toUpperCase()))}</span>` : "");
+  const top = r.runners[0];
+  let side = n ? `<span class="pill n">${n} renewal${n>1?"s":""}</span>` : `<span class="pill none">No past renewals</span>`;
+  if (n >= 3 && top && top.score > 0 && !res) side += `<span class="pill n">Top fit: ${esc(top.horse)}</span>`;
+  if (res) side += `<span class="pill ${res.top_scored_won?"hit":"res"}">Won: ${esc(res.winner)} ${esc(res.sp||"")}${res.top_scored_won?" · top fit":""}</span>`;
+  const open = S.open.has(r.race_id) || (q && r.runners.some(x => [x.horse,x.trainer,x.jockey].join(" ").toLowerCase().includes(q)));
+  return `<article class="race ${open?"open":""}" data-id="${esc(r.race_id)}">
+    <div class="rhead"><div class="off">${esc(r.off)}</div>
+      <div><div class="rname">${esc(r.race_name)}</div><div class="meta">${tags}</div></div>
+      <div class="rside">${side}<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+    </div>
+    <div class="rbody">${bodyHTML(r)}</div></article>`;
+}
+
+function bodyHTML(r){
+  const n = r.summary.n;
+  const ins = n ? `<h3>Trends from ${n} past renewal${n>1?"s":""}</h3><ul class="ins">${r.summary.insights.map(i=>`<li class="${i.strength}">${esc(i.txt)}</li>`).join("")}</ul>`
+                : `<h3>Trends</h3><p class="dim">No comparable race found here in previous seasons, so runners aren't scored.</p>`;
+  const favTxt = x => x.fav_won ? "fav won" : (x.fav_pos ? `fav ${/^\d+$/.test(x.fav_pos) ? ordinal(x.fav_pos) : x.fav_pos}` : "");
+  const ren = n ? `<h3>Past renewals</h3><div class="scroll"><table><thead><tr><th>Year</th><th>Winner</th><th class="num">Age</th><th class="num">Off top</th><th class="num hm">OR</th><th class="num">SP</th></tr></thead><tbody>
+      ${r.renewals.map(x=>`<tr><td class="dim" title="${esc(x.race_name)}">${esc(x.date.slice(0,4))}<small class="dim" style="display:block;font-size:11px">${esc((x.going||"").replace(/\s*\(.*\)/,""))} · ${x.ran||"?"} ran</small></td>
+        <td class="horse">${esc(x.winner)}<small>${esc(x.trainer||"")}${x.jockey?" · "+esc(x.jockey):""}</small></td>
+        <td class="num">${x.age??"–"}</td><td class="num">${x.from_top==null?"–":(x.from_top===0?"top":x.from_top+"lb")}</td><td class="num hm">${x.or??"–"}</td>
+        <td class="num">${esc(x.sp||"–")}<small class="dim" style="display:block;font-size:11px" title="${esc(x.fav||"")}">${favTxt(x)}</small></td></tr>`).join("")}
+      </tbody></table></div><p class="note">Hover a year for the past race's name.</p>` : "";
+  const core = new Set(["age","wt","or"]);
+  const runners = `<h3>Runners${n>=3?" · ranked by trend fit":""}</h3><div class="scroll"><table><thead><tr><th>#</th><th>Horse</th><th class="num">Age</th><th class="num">Wgt</th><th class="num hm">OR</th><th class="hm">Form</th><th>Trend fit</th><th class="num">Score</th></tr></thead><tbody>
+    ${r.runners.map(x=>{
+      const flags = x.flags.map(f=>`<span class="f ${f.k==="cdwin"?"star":(f.ok?"ok":"no")}">${f.ok?"":"✕ "}${esc(f.txt)}</span>`).join("");
+      const fit = x.flags.filter(f=>core.has(f.k)&&f.ok).length, bonus = x.score - fit;
+      const dots = Array.from({length:r.max_core},(_,i)=>`<b class="${i<fit?"on":""}"></b>`).join("") + (bonus>0?`<span class="bonus">+${bonus}</span>`:"");
+      return `<tr class="${x.won?"won":""}"><td class="dim">${x.number??""}</td>
+        <td class="horse">${esc(x.horse)}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small></td>
+        <td class="num">${x.age??""}</td><td class="num">${stlb(x.lbs)}</td><td class="num hm">${x.or??"–"}</td>
+        <td class="dim hm">${esc(x.form||"")}</td><td><div class="fit">${flags||'<span class="dim">–</span>'}</div></td>
+        <td><div class="score"><div class="dots">${dots}</div><b>${n>=3||x.score?x.score:""}</b></div></td></tr>`;}).join("")}
+    </tbody></table></div>
+    ${n>=3?`<p class="note">Dots = fits the winners' profile (age, weight off top${r.hcap?", rating":""}). +N = bonuses: trainer or jockey won a past renewal (+1 each), won this race before (+2). Red ✕ = outside the profile.</p>`:""}`;
+  return `<div class="grid2"><div>${ins}${ren}</div><div>${runners}</div></div>`;
+}
+
+async function renderPerf(){
+  S.perf = S.perf || await getJSON("data/performance.json");
+  const p = S.perf;
+  $("#sub").innerHTML = p ? `<span>Performance updated ${esc(p.updated)}</span>` : "";
+  if (!p || !p.races){ $("#app").innerHTML = `<div class="empty">No settled races yet. The evening run adds results after racing.</div>`; return; }
+  const rate = p.top_races ? (100*p.top_scored_won/p.top_races).toFixed(1) : "0.0";
+  const maxStrike = Math.max(...p.by_score.map(b=>b.strike), 1);
+  $("#app").innerHTML = `<div class="kpis">
+      <div class="kpi"><span>Scored races settled</span><b>${p.races}</b></div>
+      <div class="kpi"><span>Top trend fit won</span><b>${p.top_scored_won}</b></div>
+      <div class="kpi"><span>Top-fit strike rate</span><b>${rate}%</b></div></div>
+    <div class="panel"><h3>Strike rate by trend score</h3>
+      ${p.by_score.map(b=>`<div class="barrow"><div><b>Score ${b.score}</b></div><div class="track"><i style="width:${(100*b.strike/maxStrike).toFixed(1)}%"></i></div><div class="num">${b.wins}/${b.runners} · ${b.strike}%</div></div>`).join("")}
+      <p class="note">If higher scores don't win more often than lower ones over a few hundred races, the trends aren't adding anything for that race type.</p></div>
+    <div class="panel"><h3>By day</h3><table><thead><tr><th>Date</th><th class="num">Scored races</th><th class="num">Top fit won</th></tr></thead><tbody>
+      ${p.days.slice().reverse().map(d=>`<tr><td><a href="#${d.date}">${nice(d.date)}</a></td><td class="num">${d.races}</td><td class="num">${d.top_won}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+boot();
+</script>
+</body>
+</html>

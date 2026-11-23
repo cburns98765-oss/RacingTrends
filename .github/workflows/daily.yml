@@ -1,0 +1,46 @@
+name: Daily update
+
+on:
+  schedule:
+    - cron: "10 6 * * *"    # morning: settle yesterday, cards for today + tomorrow (06:10 UTC)
+    - cron: "40 21 * * *"   # evening: settle today, refresh tomorrow (21:40 UTC, after evening AW racing)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "morning or evening"
+        default: morning
+        type: choice
+        options: [morning, evening]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: racing-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pick mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT";
+          elif [ "${{ github.event.schedule }}" = "40 21 * * *" ]; then echo "mode=evening" >> "$GITHUB_OUTPUT";
+          else echo "mode=morning" >> "$GITHUB_OUTPUT"; fi
+      - name: Run ${{ steps.mode.outputs.mode }} update
+        run: bash scripts/run.sh ${{ steps.mode.outputs.mode }}
+      - name: Commit data
+        run: |
+          git config user.name "racing-trends-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/data data/history
+          git diff --cached --quiet && { echo "no changes"; exit 0; }
+          git commit -m "Data: ${{ steps.mode.outputs.mode }} update $(TZ=Europe/London date +%F)"
+          git pull --rebase --autostash && git push
