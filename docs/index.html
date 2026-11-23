@@ -92,6 +92,9 @@ tr:last-child td{border-bottom:0}
 .dots{display:flex;gap:3px}
 .dots b{width:9px;height:9px;border-radius:50%;background:#e2ddd0;display:block}
 .dots b.on{background:var(--turf)}
+.pill.pick{background:var(--gold);color:#1d1503}
+.pos{color:var(--turf)}
+.neg{color:var(--red)}
 .pill.top{background:var(--turf);color:#fff}
 .pill.tie{background:#ece7da;color:#6b5f45}
 table.rt td{vertical-align:middle}
@@ -152,6 +155,7 @@ const stlb = l => l ? `${Math.floor(l/14)}-${l%14}` : "";
 const furl = f => { if (!f) return ""; const hf = Math.round(f*2)/2, m = Math.floor(hf/8), r = hf - m*8; return (m ? m+"m" : "") + (r ? (Math.floor(r) || "") + (r % 1 ? "½" : "") + "f" : ""); };
 const distTxt = r => furl(r.dist_f) || String(r.dist||"");
 const ordinal = n => n + (["th","st","nd","rd"][(n%100-20)%10] || ["th","st","nd","rd"][n%100] || "th");
+const PICK_MIN = 5;  // matches PICK_MIN_SCORE in trends/__main__.py
 const TYPE = {chase:"Chase", hurdle:"Hurdle", nhf:"NH Flat", flat:"Flat"};
 
 async function getJSON(path){
@@ -241,7 +245,8 @@ function raceHTML(r, res, q){
   const t = topInfo(r);
   let side = n ? `<span class="pill n">${n} renewal${n>1?"s":""}</span>` : `<span class="pill none">No past renewals</span>`;
   if (t && !res) side += t.clear
-    ? `<span class="pill top">Top fit: ${esc(t.horse)} · ${t.score}/${t.max}</span>`
+    ? (t.score >= PICK_MIN ? `<span class="pill pick">★ Top pick: ${esc(t.horse)} · ${t.score}/${t.max}</span>`
+                           : `<span class="pill top">Top fit: ${esc(t.horse)} · ${t.score}/${t.max}</span>`)
     : `<span class="pill tie">No clear fit · ${t.tied} tied on ${t.score}</span>`;
   if (res) {
     const hit = res.clear_top_won ?? res.top_scored_won;
@@ -294,18 +299,26 @@ async function renderPerf(){
   S.perf = S.perf || await getJSON("data/performance.json");
   const p = S.perf;
   $("#sub").innerHTML = p ? `<span>Performance updated ${esc(p.updated)}</span>` : "";
-  if (!p || !p.races){ $("#app").innerHTML = `<div class="empty">No settled races yet. The evening run adds results after racing.</div>`; return; }
-  const rate = p.top_races ? (100*p.top_scored_won/p.top_races).toFixed(1) : "0.0";
-  const maxStrike = Math.max(...p.by_score.map(b=>b.strike), 1);
-  $("#app").innerHTML = `<div class="kpis">
-      <div class="kpi"><span>Scored races settled</span><b>${p.races}</b></div>
-      <div class="kpi"><span>Races with a clear top fit</span><b>${p.top_races}</b></div>
-      <div class="kpi"><span>Clear top fit won</span><b>${p.top_scored_won} · ${rate}%</b></div></div>
-    <div class="panel"><h3>Strike rate by trend score</h3>
-      ${p.by_score.map(b=>`<div class="barrow"><div><b>Score ${b.score}</b></div><div class="track"><i style="width:${(100*b.strike/maxStrike).toFixed(1)}%"></i></div><div class="num">${b.wins}/${b.runners} · ${b.strike}%</div></div>`).join("")}
-      <p class="note">If higher scores don't win more often than lower ones over a few hundred races, the trends aren't adding anything for that race type.</p></div>
-    <div class="panel"><h3>By day</h3><table><thead><tr><th>Date</th><th class="num">Scored races</th><th class="num">Clear top fit</th><th class="num">Won</th></tr></thead><tbody>
-      ${p.days.slice().reverse().map(d=>`<tr><td><a href="#${d.date}">${nice(d.date)}</a></td><td class="num">${d.races}</td><td class="num">${d.top_races||0}</td><td class="num">${d.top_won}</td></tr>`).join("")}</tbody></table></div>`;
+  const min = (p && p.min_score) || 5;
+  if (!p || !p.picks){ $("#app").innerHTML = `<div class="empty">No top picks settled yet. A top pick is a race's single clear top fit scoring ${min} or more (${min}/7 or ${min}/6). Results are added by the evening run.</div>`; return; }
+  const gbp = v => (v < 0 ? "-£" : "+£") + Math.abs(v).toFixed(2);
+  const plc = v => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  $("#app").innerHTML = `<p class="note" style="margin-top:18px">Only <b>top picks</b> are tracked: a race's single clear top fit scoring ${min} or more (${min}/7 or ${min}/6 and above). Profit/loss is £1 level stakes at starting price.</p>
+    <div class="kpis">
+      <div class="kpi"><span>Top picks</span><b>${p.picks}</b></div>
+      <div class="kpi"><span>Winners</span><b>${p.wins} · ${p.strike}%</b></div>
+      <div class="kpi"><span>Profit / loss (£1 stakes)</span><b class="${plc(p.pl)}">${gbp(p.pl)}</b></div>
+      <div class="kpi"><span>Return on stakes</span><b class="${plc(p.roi)}">${p.roi > 0 ? "+" : ""}${p.roi}%</b></div></div>
+    <div class="panel"><h3>By score</h3><table><thead><tr><th>Score</th><th class="num">Picks</th><th class="num">Won</th><th class="num">Strike</th><th class="num">P/L</th></tr></thead><tbody>
+      ${p.by_score.map(b=>`<tr><td><span class="sc s3">${b.label.split("/")[0]}<i>/${b.label.split("/")[1]}</i></span></td><td class="num">${b.picks}</td><td class="num">${b.wins}</td><td class="num">${b.strike}%</td><td class="num ${plc(b.pl)}">${gbp(b.pl)}</td></tr>`).join("")}</tbody></table></div>
+    <div class="panel"><h3>Recent top picks</h3><div class="scroll"><table><thead><tr><th>Date</th><th>Race</th><th>Pick</th><th class="num">Score</th><th>Result</th><th class="num">P/L</th></tr></thead><tbody>
+      ${p.recent.map(x=>`<tr class="${x.won?"won":""}"><td class="dim"><a href="#${x.date}">${nice(x.date)}</a></td>
+        <td>${esc(x.course)} ${esc(x.off)}<small class="dim" style="display:block;font-size:11px">${esc(x.race)}</small></td>
+        <td class="horse">${esc(x.horse)}</td><td class="num"><span class="sc s3">${x.score}<i>/${x.max}</i></span></td>
+        <td>${x.won ? `<b>Won ${esc(x.sp||"")}</b>` : `<span class="dim">Lost · won by ${esc(x.winner)} ${esc(x.winner_sp||"")}</span>`}</td>
+        <td class="num ${plc(x.pl??0)}">${x.pl==null?"–":gbp(x.pl)}</td></tr>`).join("")}</tbody></table></div></div>
+    <div class="panel"><h3>By day</h3><table><thead><tr><th>Date</th><th class="num">Picks</th><th class="num">Won</th><th class="num">P/L</th></tr></thead><tbody>
+      ${p.days.slice().reverse().map(d=>`<tr><td><a href="#${d.date}">${nice(d.date)}</a></td><td class="num">${d.picks}</td><td class="num">${d.wins}</td><td class="num ${plc(d.pl)}">${gbp(d.pl)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 boot();

@@ -20,7 +20,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HISTORY = os.path.join(ROOT, "data", "history", "races.csv.gz")
 SITE = os.environ.get("RT_SITE") or os.path.join(ROOT, "docs")  # tests point this at a temp dir
 CARDS = os.path.join(SITE, "data", "cards")
+PICKS = os.path.join(SITE, "data", "picks.json")  # permanent log of top picks (cards are pruned)
 KEEP_DAYS = 60
+PICK_MIN_SCORE = 5   # a top pick = the race's single clear top fit scoring 5+ (5/7 or 5/6 and above)
+
+
+def _top_pick(race):
+    if not race.get("runners"):
+        return None
+    top = max(x["score"] for x in race["runners"])
+    tops = [x for x in race["runners"] if x["score"] == top]
+    return tops[0] if (top >= PICK_MIN_SCORE and len(tops) == 1) else None
 
 
 def _expand(paths):
@@ -100,6 +110,7 @@ def cmd_settle(args):
     by_date = defaultdict(dict)
     for r in new:
         by_date[r["date"]][r["race_id"]] = r
+    picks = _load(PICKS, {})
     for d, res in by_date.items():
         path = os.path.join(CARDS, f"{d}.json")
         doc = _load(path, None)
@@ -117,17 +128,30 @@ def cmd_settle(args):
                 top = max((x["score"] for x in race["runners"]), default=0)
                 clear = top > 0 and sum(1 for x in race["runners"] if x["score"] == top) == 1
                 w = next((x for x in race["runners"] if x.get("won")), None)
+                scored = race["summary"]["n"] >= engine.MIN_TRENDS
                 doc["results"][race["race_id"]] = {
                     "winner": r["win_horse"], "sp": r["win_sp"], "fav_won": r["fav_won"],
                     "winner_score": w["score"] if w else None, "top_score": top,
                     "top_scored_won": bool(w and w["score"] == top and top > 0),
                     "clear_top": clear, "clear_top_won": bool(clear and w and w["score"] == top),
-                    "scored": race["summary"]["n"] >= engine.MIN_TRENDS,
+                    "scored": scored,
                 }
+                pick = _top_pick(race) if scored else None
+                if pick:
+                    won = bool(pick.get("won"))
+                    dec = U.to_float(r.get("win_dec")) or U.sp_to_dec(r.get("win_sp"))
+                    picks[race["race_id"]] = {
+                        "date": d, "course": race["course"], "off": race["off"], "race": race["race_name"],
+                        "horse": pick["horse"], "score": pick["score"], "max": race.get("max_core", 0) + 4,
+                        "won": won, "sp": r["win_sp"] if won else "", "winner": r["win_horse"],
+                        "winner_sp": r["win_sp"],
+                        "pl": round(dec - 1, 2) if (won and dec) else (-1.0 if not won else None),
+                    }
                 settled += 1
         doc["settled"] = _now()
         _save(path, doc)
         print(f"settle {d}: {settled} races")
+    _save(PICKS, picks)
     _write_performance()
     _write_index()
     print(f"history: +{added} races")
@@ -151,36 +175,26 @@ def _find_by_course_time(res, race):
 
 
 def _write_performance():
-    """Strike rate by trend score across all settled, scored races."""
-    by_score = defaultdict(lambda: [0, 0])
-    races = top_won = top_races = 0
-    days = []
-    for path in sorted(glob.glob(os.path.join(CARDS, "*.json"))):
-        doc = _load(path, {})
-        day = {"date": doc.get("date"), "races": 0, "top_won": 0}
-        for m in doc.get("meetings", []):
-            for race in m["races"]:
-                res = doc.get("results", {}).get(race.get("race_id"))
-                if not res or not res.get("scored"):
-                    continue
-                races += 1
-                day["races"] += 1
-                for x in race["runners"]:
-                    by_score[x["score"]][0] += 1
-                    by_score[x["score"]][1] += int(bool(x.get("won")))
-                if res.get("clear_top"):  # only races with one clear top fit count
-                    top_races += 1
-                    day["top_races"] = day.get("top_races", 0) + 1
-                    if res.get("clear_top_won"):
-                        top_won += 1
-                        day["top_won"] += 1
-        if day["races"]:
-            days.append(day)
+    """Results of top picks only: wins, strike rate and level-stakes P/L at SP (£1 a pick)."""
+    picks = sorted(_load(PICKS, {}).values(), key=lambda p: (p["date"], str(p["off"])))
+
+    def summary(ps):
+        n, w = len(ps), sum(1 for p in ps if p["won"])
+        pl = round(sum(p["pl"] for p in ps if p["pl"] is not None), 2)
+        return {"picks": n, "wins": w, "strike": round(100 * w / n, 1) if n else 0.0, "pl": pl,
+                "roi": round(100 * pl / n, 1) if n else 0.0}
+
+    by_score = defaultdict(list)
+    for p in picks:
+        by_score[f"{p['score']}/{p['max']}"].append(p)
+    days = defaultdict(list)
+    for p in picks:
+        days[p["date"]].append(p)
     perf = {
-        "updated": _now(), "races": races, "top_scored_won": top_won, "top_races": top_races,
-        "by_score": [{"score": s, "runners": v[0], "wins": v[1], "strike": round(100 * v[1] / v[0], 1) if v[0] else 0}
-                     for s, v in sorted(by_score.items())],
-        "days": days[-60:],
+        "updated": _now(), "min_score": PICK_MIN_SCORE, **summary(picks),
+        "by_score": [{"label": k, **summary(v)} for k, v in sorted(by_score.items(), reverse=True)],
+        "days": [{"date": d, **summary(v)} for d, v in sorted(days.items())],
+        "recent": picks[-100:][::-1],
     }
     _save(os.path.join(SITE, "data", "performance.json"), perf)
 
