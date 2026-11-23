@@ -76,7 +76,8 @@ def _score(item):
         return {"race_id": card["race_id"], "error": str(e)}
     out = {"race_id": card["race_id"], "date": card["date"], "course": card["course"], "off": card["off"],
            "race": card["race_name"], "type": card["type"], "surface": card["surface"], "region": card["region"],
-           "hcap": card["hcap"], "renewals": a["summary"]["n"], "runners": len(card["runners"]),
+           "hcap": card["hcap"], "class": card.get("class") or "", "dist_f": card.get("dist_f") or "",
+           "renewals": a["summary"]["n"], "runners": len(card["runners"]),
            "winner": win["horse"], "winner_sp": win["sp"]}
     if a["summary"]["n"] < engine.MIN_TRENDS or not a["runners"]:
         return out
@@ -120,7 +121,7 @@ def main():
                 print(f"  scored {i}", file=sys.stderr)
     results.sort(key=lambda r: (r.get("date", ""), str(r.get("course", "")), str(r.get("off", ""))))
 
-    cols = ["date", "course", "off", "race", "region", "type", "surface", "hcap", "renewals", "runners",
+    cols = ["date", "course", "off", "race", "region", "type", "surface", "hcap", "class", "dist_f", "renewals", "runners",
             "top_score", "max", "tied", "pick", "won", "pl", "winner", "winner_sp"]
     with open(os.path.join(args.out, "races.csv"), "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
