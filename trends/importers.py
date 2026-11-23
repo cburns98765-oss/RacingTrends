@@ -8,7 +8,7 @@ import gzip
 import io
 import json
 import os
-from collections import defaultdict
+from datetime import datetime
 
 from . import util as U
 
@@ -22,27 +22,84 @@ RACE_FIELDS = [
 
 
 def _open_text(path):
-    if str(path).endswith(".gz"):
-        return io.TextIOWrapper(gzip.open(path, "rb"), encoding="utf-8-sig", newline="")
-    return open(path, encoding="utf-8-sig", newline="")
+    """Text handle that copes with UTF-8 or Windows-1252 files (RacingFormBook uses the latter)."""
+    raw = gzip.open(path, "rb") if str(path).endswith(".gz") else open(path, "rb")
+    head = raw.peek(65536)[:65536] if hasattr(raw, "peek") else b""
+    try:
+        head.decode("utf-8")
+        enc = "utf-8-sig"
+    except UnicodeDecodeError:
+        enc = "cp1252"
+    return io.TextIOWrapper(raw, encoding=enc, errors="replace", newline="")
 
 
-def results_csv_to_races(paths):
-    """Group runner rows by race and summarise. Unknown columns are ignored."""
-    by_race = defaultdict(list)
-    seen_cols = set()
+# RacingFormBook "SFF" results files -> the column names the summariser understands
+SFF_TYPES = {"h": "Hurdle", "c": "Chase", "b": "NH Flat", "": "Flat"}
+
+
+def _sff_row(r):
+    course = (r.get("Course") or "").strip()
+    region = "ire" if "(IRE)" in course else ("gb" if "(" not in course else course[course.rfind("(") + 1:-1].lower())
+    try:
+        d = datetime.strptime(r["RaceDate"].strip(), "%d-%b-%y").date().isoformat()
+    except (ValueError, KeyError):
+        d = r.get("RaceDate", "")
+    ratio = U.to_float(r.get("Sp"))
+    dec = round(ratio + 1, 3) if ratio is not None else None
+    fav = (r.get("Favs") or "").strip()
+    fav_tag = {"Fav": "F", "JFav": "J", "CFav": "C"}.get(fav, "")
+    sp = (U.frac_from_dec(dec) + fav_tag) if dec else ""
+    going = r.get("Going", "")
+    yards = U.to_float(r.get("Yards"))
+    return {
+        "race_id": f"rfb{r.get('Id', '')}", "date": d, "region": region, "course": course,
+        "off": r.get("RaceTime", ""), "race_name": r.get("Race", ""),
+        "type": SFF_TYPES.get((r.get("Type") or "").strip().lower(), "Flat"),
+        "surface": "aw" if "(aw" in going.lower() else "turf", "class": r.get("Class", ""),
+        "dist_f": round(yards / 220, 2) if yards else "", "dist": r.get("Distance", ""),
+        "going": going, "ran": r.get("Ran", ""), "pos": r.get("FPos", ""), "horse": r.get("HorseName", ""),
+        "age": r.get("Age", ""), "lbs": r.get("WeightLBS", ""), "or": r.get("OR", ""), "dec": dec or "",
+        "sp": sp, "trainer": r.get("Trainer", ""), "jockey": r.get("Jockey", ""), "rating_band": r.get("Limit", ""),
+    }
+
+
+def _rows(paths, seen_cols):
     for p in paths:
         with _open_text(p) as fh:
             reader = csv.DictReader(fh)
-            seen_cols.update(reader.fieldnames or [])
+            cols = reader.fieldnames or []
+            seen_cols.update(cols)
+            sff = "FPos" in cols and "HorseName" in cols
             for row in reader:
-                rid = U.pick(row, "race_id", "raceid")
-                if not rid:
-                    rid = "|".join(str(U.pick(row, k, default="")) for k in ("date", "course", "off", "race_name"))
-                by_race[str(rid)].append(row)
-    if by_race and not {"pos", "position"} & {c.lower() for c in seen_cols}:
+                yield _sff_row(row) if sff else row
+
+
+def results_csv_to_races(paths):
+    """Summarise runner rows race by race, streaming (a race's rows are consecutive in both
+    rpscrape and RacingFormBook files, so 10 years of data never has to sit in memory)."""
+    seen_cols = set()
+    out = {}
+    cur_id, cur_rows = None, []
+
+    def flush():
+        if cur_rows:
+            s = _summarise(cur_id, cur_rows)
+            if s and (cur_id not in out or len(cur_rows) >= int(out[cur_id].get("ran") or 0)):
+                out[cur_id] = s
+
+    for row in _rows(paths, seen_cols):
+        rid = U.pick(row, "race_id", "raceid")
+        if not rid:
+            rid = "|".join(str(U.pick(row, k, default="")) for k in ("date", "course", "off", "race_name"))
+        rid = str(rid)
+        if rid != cur_id:
+            flush()
+            cur_id, cur_rows = rid, []
+        cur_rows.append(row)
+    flush()
+    if seen_cols and not {"pos", "position", "fpos"} & {c.lower() for c in seen_cols}:
         raise SystemExit(f"Results CSV has no position column. Columns found: {sorted(seen_cols)}")
-    return [r for r in (_summarise(rid, rows) for rid, rows in by_race.items()) if r]
+    return list(out.values())
 
 
 def _summarise(rid, rows):
@@ -176,7 +233,8 @@ def racecards_to_races(path, fallback_date=None):
             "region": str(U.pick(r, "region", default=region_from_path)).lower(),
             "course_id": str(U.pick(r, "course_id", default="") or ""),
             "course": course,
-            "off": U.pick(r, "off_time", "off", "time", default=""),
+            # The Racing API gives off_time on a 12-hour clock ("1:30"); off_dt has the real 24h time
+            "off": (str(U.pick(r, "off_dt"))[11:16] if U.pick(r, "off_dt") else U.pick(r, "off_time", "off", "time", default="")),
             "race_name": name,
             "type": U.race_type(U.pick(r, "type", "race_type"), name),
             "surface": U.surface(U.pick(r, "surface"), course, going),

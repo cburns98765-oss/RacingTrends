@@ -35,6 +35,9 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "40 21 * * *" ]; then echo "mode=evening" >> "$GITHUB_OUTPUT";
           else echo "mode=morning" >> "$GITHUB_OUTPUT"; fi
       - name: Run ${{ steps.mode.outputs.mode }} update
+        env:
+          RACING_API_USERNAME: ${{ secrets.RACING_API_USERNAME }}
+          RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
         run: bash scripts/run.sh ${{ steps.mode.outputs.mode }}
       - name: Commit data
         run: |

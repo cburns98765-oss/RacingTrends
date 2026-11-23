@@ -132,8 +132,18 @@ def cmd_settle(args):
 
 
 def _find_by_course_time(res, race):
+    def hm(t):  # '1:30', '13:30', '13:30:00' -> minutes past midnight, treating 1:00-11:59 as afternoon if needed
+        try:
+            h, m = (int(x) for x in str(t).strip()[:5].split(":")[:2])
+        except ValueError:
+            return None
+        return h * 60 + m
+    want = hm(race["off"])
     for r in res.values():
-        if U.norm_name(r["course"]) == U.norm_name(race["course"]) and str(r["off"]).strip()[:5] == str(race["off"]).strip()[:5]:
+        if U.course_name_key(r["course"]) != U.course_name_key(race["course"]):
+            continue
+        got = hm(r["off"])
+        if want is not None and got is not None and (got == want or (got + 720) % 1440 == want or (want + 720) % 1440 == got):
             return r
     return None
 

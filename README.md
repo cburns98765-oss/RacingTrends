@@ -7,69 +7,65 @@ summarises what the winners had in common (age, weight off top, rating, price, f
 repeat trainers/jockeys), and ranks the runners by how well they fit. After racing it records the result
 so the **Performance** tab shows whether higher trend scores actually win more often.
 
-## How it works
+## Data sources
 
-| When (UK time) | What runs |
+| What | Where from | Cost |
+|---|---|---|
+| History, 2016 onwards (GB + IRE) | [RacingFormBook](https://www.racingformbook.com/past-racing-results-files/) results files, imported once | £38.99 one-off (top up a year at a time later) |
+| Today's & tomorrow's cards (GB + IRE) | [The Racing API](https://www.theracingapi.com) free plan, `/v1/racecards/free` | Free |
+| Daily results (settles the dashboard, grows the history) | [rpscrape-community](https://github.com/Eatkin/rpscrape-community), one day's races only | Free |
+
+Racing Post blocks bulk scraping (a few hundred races in a row), so rpscrape is only used for one day's
+results at a time. If a day is refused, the site still works; that day just isn't scored.
+
+## Schedule (UK time)
+
+| When | What runs |
 |---|---|
-| ~06:10 | Settle yesterday's results, build cards for today and tomorrow |
+| ~06:10 | Settle yesterday if the evening run missed it, cards for today and tomorrow |
 | ~21:40 | Settle today's results, refresh tomorrow's cards |
 
-GitHub Actions runs `scripts/run.sh`, which uses [rpscrape-community](https://github.com/Eatkin/rpscrape-community)
-(the maintained continuation of rpscrape, whose original repo went offline) to fetch
-racecards and results, then `python -m trends` to do the analysis. The site is static (`docs/`) and served
-by GitHub Pages. GitHub's scheduled runs can start 5–30 minutes late at busy times.
-
-**Matching a "past renewal"**: same course, race type (flat/hurdle/chase/NH flat), surface, handicap or not,
-pattern level, distance within ~1¼f (jumps) or ~½f (sprints), class within one band, run within ±45 days of
-the same date. If several races in a season qualify, the closest one wins (penalties for distance, class,
-date gap and race-kind differences such as maiden/novice/mares). Runners are only scored when 3+ renewals exist.
+GitHub's scheduled runs can start 5–30 minutes late at busy times.
 
 ## One-time setup
 
-1. **Let Claude push (optional)** – install the Claude GitHub app on this repo, or upload the files yourself.
-2. **Turn on the site** – *Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/docs`*.
-   Your dashboard will be at `https://cburns98765-oss.github.io/RacingTrends/`.
-3. **Allow the workflows to commit** – *Settings → Actions → General → Workflow permissions → Read and write*.
-4. **Load the history from your Mac** (Racing Post blocks GitHub's servers for bulk scraping):
+1. **Site**: *Settings → Pages → Deploy from a branch → `main` / `/docs`*.
+   It lives at `https://cburns98765-oss.github.io/RacingTrends/`.
+2. **Let workflows save data**: *Settings → Actions → General → Workflow permissions → Read and write*.
+3. **Racecards**: create a free account at theracingapi.com, then add two repository secrets
+   (*Settings → Secrets and variables → Actions → New repository secret*):
+   `RACING_API_USERNAME` and `RACING_API_PASSWORD` (the API username/password from your Racing API dashboard).
+4. **History**: buy the RacingFormBook 2016–2026 results files, then on your Mac in this project folder:
    ```bash
-   git clone https://github.com/cburns98765-oss/RacingTrends.git && cd RacingTrends
-   bash scripts/backfill.sh 2021 2026
+   bash scripts/import_rfb.sh ~/Downloads/path/to/files/*.csv     # .zip files work too
    ```
-   Needs Python 3.13+. No admin rights? Install [uv](https://docs.astral.sh/uv/) into your home folder with
-   `curl -LsSf https://astral.sh/uv/install.sh | sh` and the script uses it to fetch Python 3.13. No git?
-   Download the repo with *Code → Download ZIP* instead of cloning, and upload `data/history/backfill.csv.gz`
-   through GitHub's website afterwards. It works newest month first,
-   saves and pushes after each month to `data/history/backfill.csv.gz`, keeps the Mac awake, and can be
-   stopped (Ctrl+C) and re-run any time – finished months are skipped. rpscrape-community waits ~2–3 s
-   between requests, so a month of GB + IRE racing takes roughly 30–60 minutes. If Racing Post starts
-   blocking your connection the script stops; wait a day before running it again.
-5. **First daily run** – *Actions → Daily update → Run workflow → morning*. After that it runs on its own.
+   Upload the resulting `data/history/rfb.csv.gz` (a few MB) to the repo's `data/history` folder on GitHub.
+5. **First run**: *Actions → Daily update → Run workflow → morning*. After that it runs on its own.
 
-## Run the daily update on your own computer
+## How a "past renewal" is matched
 
-If Racing Post blocks GitHub's servers (rpscrape gets errors or returns no files in the Actions log),
-run the same thing locally (macOS/Linux, or Windows with Git Bash / WSL) and push:
-
-```bash
-bash scripts/run.sh morning      # or: evening
-git add docs/data data/history && git commit -m "data" && git push
-```
+Same course, race type (flat/hurdle/chase/NH flat), surface, handicap or not, pattern level, distance within
+~1¼f (jumps) or ~½f (sprints), class within one band, run within ±45 days of the same date. If several races
+in a season qualify, the closest one wins (penalties for distance, class, date gap and race-kind differences such
+as maiden/novice/mares). Runners are only scored when 3+ renewals exist.
 
 ## Commands
 
 ```bash
-python -m trends history RESULTS.csv ...     # add rpscrape results to the history
-python -m trends merge PART.csv.gz ...       # merge backfill parts
+python -m trends history RESULTS.csv ...     # add results (rpscrape or RacingFormBook CSV) to the history
+python -m trends merge PART.csv.gz ...       # merge compact history files
 python -m trends cards RACECARDS.json ...    # analyse cards -> docs/data/cards/<date>.json
 python -m trends settle RESULTS.csv ...      # mark winners, update performance + history
 python -m trends bundle                      # docs/standalone.html: one file with the data inside
-python -m unittest discover tests            # tests (Southwell 24 Nov 2026 fixture)
+python -m unittest discover tests            # tests
 ```
 
 ## Notes
 
-- rpscrape scrapes Racing Post, whose terms don't allow scraping. Keep use personal. GitHub Pages sites are
-  public, so anyone with the link can see the dashboard (it's marked `noindex` so search engines skip it).
-- rpscrape's column names change between versions; the importer accepts the common aliases and stops with a
-  list of the columns it found if it can't find finishing positions.
+- GitHub Pages sites are public; the page is marked `noindex` so search engines skip it. Check the data
+  providers' terms before sharing the link widely.
+- Every file in `data/history/` is read: `rfb.csv.gz` (RacingFormBook import), `races.csv.gz` (daily results),
+  `backfill.csv.gz` (an earlier rpscrape backfill attempt). Duplicates across them are harmless.
+- `scripts/backfill.sh` (bulk rpscrape backfill) is kept for reference but Racing Post blocks it after a few
+  hundred races; use the RacingFormBook files instead.
 - The demo data in `docs/data` (Southwell, 24 Nov 2026) is replaced by the first real run.

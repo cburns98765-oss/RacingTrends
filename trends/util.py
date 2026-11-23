@@ -80,7 +80,8 @@ def surface(v=None, course="", going=""):
         return "turf"
     if "(aw)" in str(course).lower():
         return "aw"
-    if str(going or "").lower().strip() in AW_GOINGS:
+    g = str(going or "").lower().strip()
+    if g in AW_GOINGS or "(aw" in g or g.startswith("standard"):
         return "aw"
     return "turf"
 
@@ -131,11 +132,22 @@ def doy_gap(a, b):
     return min(d, 365 - d)
 
 
+COURSE_ALIASES = {"chelmsfordcity": "chelmsford", "epsomdowns": "epsom", "kemptonpark": "kempton",
+                  "sandownpark": "sandown", "haydockpark": "haydock", "lingfieldpark": "lingfield",
+                  "bangorondee": "bangor", "newmarketrowley": "newmarket", "newmarketjuly": "newmarket"}
+
+
+def course_name_key(name):
+    """'Southwell (AW)', 'Naas (IRE)', 'Chelmsford City' -> 'southwell', 'naas', 'chelmsford'."""
+    n = re.sub(r"\(.*?\)", "", str(name or "")).lower()
+    n = re.sub(r"racecourse|[^a-z]", "", n)
+    return COURSE_ALIASES.get(n, n)
+
+
 def course_key(course_id, course_name):
     if course_id not in (None, ""):
         return f"id:{str(course_id).strip()}"
-    n = re.sub(r"\(.*?\)", "", str(course_name or "")).strip().lower()
-    return f"name:{n}"
+    return f"name:{course_name_key(course_name)}"
 
 
 def clean_course(name):
