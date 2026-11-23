@@ -43,6 +43,7 @@ def load(paths_or_zip):
                 continue
             k = (d, U.course_name_key(course_from_menu(r.get("menu_hint"))), U.norm_name(r.get("selection_name")))
             out[k] = {"bsp": _f(r.get("bsp")), "morning": _f(r.get("morningwap")), "ppwap": _f(r.get("ppwap")),
+                      "ipmin": _f(r.get("ipmin")), "ipmax": _f(r.get("ipmax")),
                       "win": str(r.get("win_lose", "")).strip() == "1"}
 
     for p in paths_or_zip:

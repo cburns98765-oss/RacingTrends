@@ -13,7 +13,7 @@ import os
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import engine, importers
+from . import engine, importers, profiles
 from . import util as U
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +21,7 @@ HISTORY = os.path.join(ROOT, "data", "history", "races.csv.gz")
 SITE = os.environ.get("RT_SITE") or os.path.join(ROOT, "docs")  # tests point this at a temp dir
 CARDS = os.path.join(SITE, "data", "cards")
 PICKS = os.path.join(SITE, "data", "picks.json")  # permanent log of top picks (cards are pruned)
+PROFILES = os.environ.get("RT_PROFILES") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "profiles.json.gz")
 KEEP_DAYS = 60
 PICK_MIN_SCORE = 5   # a top pick = the race's single clear top fit scoring 5+ (5/7 or 5/6 and above)
 
@@ -83,10 +84,11 @@ def cmd_cards(args):
             if race["date"]:
                 by_date[race["date"]].append(race)
     os.makedirs(CARDS, exist_ok=True)
+    prof = profiles.load(PROFILES)
     for d, races in by_date.items():
         path = os.path.join(CARDS, f"{d}.json")
         old = _load(path, {}).get("results", {})
-        analysed = [engine.analyse(r, idx) for r in races]
+        analysed = [profiles.attach(engine.analyse(r, idx), prof) for r in races]
         meetings = defaultdict(list)
         for a in analysed:
             meetings[(a["course"], a["region"])].append(a)

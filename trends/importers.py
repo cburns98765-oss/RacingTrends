@@ -80,6 +80,7 @@ def _duo_rows(details_path, reader):
             "SpText": ("evs" if frm == to else f"{int(frm)}/{int(to)}") if (frm and to) else "", "Age": r["Age"],
             "WeightLBS": (st * 14 + lb) if st is not None and lb is not None else "", "Favs": r["Favs"],
             "Trainer": r["Trainer"], "Jockey": r["Jockey"], "OR": r.get("Or", ""),
+            "Comments": r.get("Comments", ""),
         }, type_from_name=True)
 
 
@@ -113,6 +114,7 @@ def _sff_row(r, type_from_name=False):
         "going": going, "ran": r.get("Ran", ""), "pos": r.get("FPos", ""), "horse": r.get("HorseName", ""),
         "age": r.get("Age", ""), "lbs": r.get("WeightLBS", ""), "or": r.get("OR", ""), "dec": dec or "",
         "sp": sp, "trainer": r.get("Trainer", ""), "jockey": r.get("Jockey", ""), "rating_band": r.get("Limit", ""),
+        "comment": r.get("Comments", ""),
     }
 
 

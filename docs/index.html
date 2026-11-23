@@ -71,6 +71,13 @@ select.tab option{color:var(--ink)}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:18px}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.rhead{grid-template-columns:56px minmax(0,1fr)}.rside{grid-column:1/-1;justify-content:flex-start}}
 @media (max-width:560px){.brand span{display:none}.bar{gap:10px}.tab{padding:7px 10px;font-size:13px}.wrap{padding:0 12px}.rbody{padding:12px}.search{min-width:0;width:100%}.hm{display:none}td,th{padding:6px 3px}.rbody{padding:10px 8px}.cell{min-width:0;padding:3px 5px}.sc{min-width:0;padding:3px 6px;font-size:15px}.horse small{font-size:11px}.bm{display:flex!important;margin-top:4px}}
+.st{display:inline-block;font:700 10px Inter,sans-serif;letter-spacing:.3px;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.st.F{background:#fde2d8;color:#8a2c14}.st.P{background:#fdf0cf;color:#7a5a12}.st.M{background:#e4ecf6;color:#2c4a73}.st.H{background:#e6efe9;color:#1d5a3c}
+.b.ip{background:#efe9f7;color:#5a3d86}
+.pace{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;margin:0 0 6px;font-size:13px}
+.pace dt{font-weight:700;font-size:12px;padding-top:2px}.pace dd{margin:0}
+.pace .lane{display:flex;flex-wrap:wrap;gap:4px}.pace .lane span{background:var(--chip);border-radius:5px;padding:1px 7px}
+.verdict{background:var(--chip);border-radius:8px;padding:7px 10px;margin:0 0 6px;font-weight:600}
 h3{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
 .ins{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
 .ins li{padding:8px 10px;border-radius:8px;background:#f7f5ef;border-left:3px solid #cfc8b6;font-size:13px}
@@ -261,6 +268,15 @@ function raceHTML(r, res, q){
     <div class="rbody">${bodyHTML(r)}</div></article>`;
 }
 
+const STYLE = {F:"Front-runner",P:"Prominent",M:"Mid-division",H:"Held up"};
+const STYLE_SHORT = {F:"Front",P:"Prom",M:"Mid",H:"Held up"};
+function paceHTML(r){
+  if (!r.pace) return "";
+  const g = r.pace.groups;
+  const lane = k => `<dt><span class="st ${k}" style="margin:0">${STYLE_SHORT[k]}</span></dt><dd class="lane">${g[k].length ? g[k].map(h=>`<span>${esc(h)}</span>`).join("") : '<em class="dim">none</em>'}</dd>`;
+  return `<h3>Pace map</h3><p class="verdict">${esc(r.pace.verdict)}</p><dl class="pace">${["F","P","M","H"].map(lane).join("")}</dl>
+    <p class="note">Each horse's most common early position over its last 6 runs (from race comments, RacingFormBook to Nov 2026).${r.pace.unknown.length?` No profile: ${r.pace.unknown.map(esc).join(", ")}.`:""}</p>`;
+}
 function bodyHTML(r){
   const n = r.summary.n;
   const ins = n ? `<h3>Trends from ${n} past renewal${n>1?"s":""}</h3><ul class="ins">${r.summary.insights.map(i=>`<li class="${i.strength}">${esc(i.txt)}</li>`).join("")}</ul>`
@@ -282,17 +298,19 @@ function bodyHTML(r){
   const runners = `<h3>Runners${scored?" · ranked by trend fit":""}</h3><div class="scroll"><table class="rt"><thead><tr><th class="hm">#</th><th>Horse</th><th class="num">Age</th><th class="num">Weight</th><th class="num">OR</th><th class="hm">Form</th><th class="hm">Bonus</th><th class="num">Score</th></tr></thead><tbody>
     ${r.runners.map(x=>{
       const has = k => x.flags.some(f => f.k === k && f.ok);
-      const bonus = [has("cdwin") ? `<span class="b star">★ Won it</span>` : "", has("trainer") ? `<span class="b">Trainer</span>` : "", has("jockey") ? `<span class="b">Jockey</span>` : ""].join("");
+      const bonus = [has("cdwin") ? `<span class="b star">★ Won it</span>` : "", has("trainer") ? `<span class="b">Trainer</span>` : "", has("jockey") ? `<span class="b">Jockey</span>` : ""].join("")
+        + ((x.profile && x.profile.badges) || []).map(b => `<span class="b ip" title="${esc(b.txt)} (Betfair in-play prices; not a proven edge)">${b.k==="ip_short"?"Folds when short":"Comes from behind"}</span>`).join("");
+      const pr = x.profile, stb = pr && pr.usual ? `<span class="st ${pr.usual}" title="${STYLE[pr.usual]} · last runs, newest first: ${esc(pr.recent)}">${STYLE_SHORT[pr.usual]}</span>` : "";
       const isTop = t && x.score === t.score && t.score > 0;
       const lvl = !scored ? "" : (x.score >= r.max_core + 1 ? "s3" : x.score >= r.max_core && x.score > 0 ? "s2" : x.score > 0 ? "s1" : "s0");
       return `<tr class="${x.won?"won":""} ${isTop && t.clear ? "topfit" : ""} ${isTop && !t.clear ? "tied" : ""}"><td class="dim hm">${x.number??""}</td>
-        <td class="horse">${esc(x.horse)}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small>${bonus?`<div class="fit bm">${bonus}</div>`:""}</td>
+        <td class="horse">${esc(x.horse)}${stb}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small>${bonus?`<div class="fit bm">${bonus}</div>`:""}</td>
         ${cell(x,"age",x.age??"–")}${cell(x,"wt",wtTxt(x))}${cell(x,"or",x.or??"–")}
         <td class="dim hm">${esc(x.form||"")}</td><td class="hm"><div class="fit">${bonus||'<span class="dim">–</span>'}</div></td>
         <td class="num">${scored||x.score?`<span class="sc ${lvl}">${x.score}<i>/${max}</i></span>`:""}</td></tr>`;}).join("")}
     </tbody></table></div>
-    ${scored?`<p class="note"><span class="cell ok">green</span> fits the past winners' profile, <span class="cell no">red</span> doesn't. Score: 1 point each for age, weight${r.hcap?", rating":""}; +1 if the trainer, +1 if the jockey won a past running; +2 if the horse won it before. ${t && !t.clear ? `${t.tied} runners share the top score, so there's no clear fit.` : ""}</p>`:""}`;
-  return `<div class="grid2"><div>${ins}${ren}</div><div>${runners}</div></div>`;
+    ${scored?`<p class="note"><span class="cell ok">green</span> fits the past winners' profile, <span class="cell no">red</span> doesn't. Score: 1 point each for age, weight${r.hcap?", rating":""}; +1 if the trainer, +1 if the jockey won a past running; +2 if the horse won it before. Style tags (Front / Prom / Mid / Held up) and in-running tags are for reading the race only and don't change the score. ${t && !t.clear ? `${t.tied} runners share the top score, so there's no clear fit.` : ""}</p>`:""}`;
+  return `<div class="grid2"><div>${ins}${paceHTML(r)}${ren}</div><div>${runners}</div></div>`;
 }
 
 async function renderPerf(){
