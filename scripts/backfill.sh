@@ -14,12 +14,26 @@ FROM="${1:?first year, e.g. 2021}"; TO="${2:-$(date +%Y)}"
 DONE=data/history/done_months.txt
 mkdir -p data/history && touch "$DONE"
 
-# Python 3.13+ in a local virtualenv (rpscrape-community needs 3.13)
+# Python 3.13+ in a local virtualenv (rpscrape-community needs 3.13).
+# Uses an installed Python if new enough, otherwise uv (no admin rights needed) to fetch one into your home folder.
 if [ ! -x .venv/bin/python ]; then
-  PYBIN="$(command -v python3.14 || command -v python3.13 || command -v python3)"
-  "$PYBIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3,13) else 1)' || {
-    echo "Python 3.13 or newer is needed. Install it from https://www.python.org/downloads/ then re-run." >&2; exit 1; }
-  "$PYBIN" -m venv .venv
+  PYBIN=""
+  for c in python3.14 python3.13 python3; do
+    p="$(command -v "$c" || true)"
+    if [ -n "$p" ] && "$p" -c 'import sys; sys.exit(0 if sys.version_info >= (3,13) else 1)' 2>/dev/null; then PYBIN="$p"; break; fi
+  done
+  if [ -n "$PYBIN" ]; then
+    "$PYBIN" -m venv .venv
+  else
+    UV="$(command -v uv || ls "$HOME/.local/bin/uv" 2>/dev/null || true)"
+    if [ -z "$UV" ]; then
+      echo "Python 3.13 isn't available. Install uv (no admin needed), then run this again:" >&2
+      echo "    curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+      exit 1
+    fi
+    "$UV" python install 3.13
+    "$UV" venv --seed --python 3.13 .venv
+  fi
 fi
 export PYTHON="$PWD/.venv/bin/python"
 scripts/rp.sh setup
@@ -53,7 +67,12 @@ while read -r start end full; do
     exit 3
   fi
   [ "$full" = 1 ] && [ "$rc" = 0 ] && echo "$key" >> "$DONE"
-  git add data/history && git commit -qm "History: $key" && \
-    { git pull --rebase --autostash -q && git push -q || echo "(push failed - run 'git pull --rebase && git push' later)"; } || true
+  if command -v git >/dev/null && { [ "$(uname)" != Darwin ] || xcode-select -p >/dev/null 2>&1; } \
+     && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git add data/history && git commit -qm "History: $key" && \
+      { git pull --rebase --autostash -q && git push -q || echo "(push failed - run 'git pull --rebase && git push' later)"; } || true
+  else
+    echo "Saved to $HIST - upload it to GitHub (data/history folder -> Add file -> Upload files) when you like."
+  fi
 done <<< "$months"
 echo "Backfill finished for $FROM-$TO."

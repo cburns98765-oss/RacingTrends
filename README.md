@@ -35,7 +35,10 @@ date gap and race-kind differences such as maiden/novice/mares). Runners are onl
    git clone https://github.com/cburns98765-oss/RacingTrends.git && cd RacingTrends
    bash scripts/backfill.sh 2021 2026
    ```
-   Needs Python 3.13+ ([python.org](https://www.python.org/downloads/)). It works newest month first,
+   Needs Python 3.13+. No admin rights? Install [uv](https://docs.astral.sh/uv/) into your home folder with
+   `curl -LsSf https://astral.sh/uv/install.sh | sh` and the script uses it to fetch Python 3.13. No git?
+   Download the repo with *Code → Download ZIP* instead of cloning, and upload `data/history/backfill.csv.gz`
+   through GitHub's website afterwards. It works newest month first,
    saves and pushes after each month to `data/history/backfill.csv.gz`, keeps the Mac awake, and can be
    stopped (Ctrl+C) and re-run any time – finished months are skipped. rpscrape-community waits ~2–3 s
    between requests, so a month of GB + IRE racing takes roughly 30–60 minutes. If Racing Post starts

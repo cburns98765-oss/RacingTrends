@@ -14,15 +14,20 @@ PY="${PYTHON:-python3}"
 mkdir -p "$WORK"
 
 setup() {
-  if [ ! -d "$RP/.git" ]; then
-    git clone --depth 1 "${RPSCRAPE_REPO:-https://github.com/Eatkin/rpscrape-community}" "$RP"
+  local repo="${RPSCRAPE_REPO:-https://github.com/Eatkin/rpscrape-community}"
+  if [ ! -d "$RP/scripts" ]; then
+    if command -v git >/dev/null && { [ "$(uname)" != Darwin ] || xcode-select -p >/dev/null 2>&1; }; then
+      git clone --depth 1 "$repo" "$RP"
+    else  # no git (e.g. a Mac without developer tools): download the zip instead
+      mkdir -p "$RP" && curl -fsSL "$repo/archive/refs/heads/master.tar.gz" | tar -xz -C "$RP" --strip-components=1
+    fi
   fi
   if [ -f "$RP/requirements.txt" ]; then
     "$PY" -m pip install -q -r "$RP/requirements.txt"
   else
     "$PY" -m pip install -q curl_cffi jarowinkler lxml orjson python-dotenv tomli tqdm
   fi
-  echo "rpscrape at $(git -C "$RP" rev-parse --short HEAD)"
+  echo "rpscrape at $(git -C "$RP" rev-parse --short HEAD 2>/dev/null || echo 'downloaded copy')"
 }
 
 newer_than() {  # files matching $2 modified after marker $1, largest first, ignoring caches/settings
