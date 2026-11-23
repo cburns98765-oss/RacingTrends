@@ -36,9 +36,10 @@ def index_history(rows):
             rec[k] = _f(r.get(k))
         rec["fav_won"] = str(r.get("fav_won")) in ("1", "True", "true")
         rec["hcap"] = str(r.get("hcap")) in ("1", "True", "true")
-        keys = {U.course_key(r.get("course_id"), r.get("course")), U.course_key(None, r.get("course"))}
-        for k in keys:
-            idx.setdefault(k, []).append(rec)
+        rec["_doy"] = d.timetuple().tm_yday
+        # bucket by course + race type + surface + handicap so each lookup scans only like-for-like races
+        for ck in {U.course_key(r.get("course_id"), r.get("course")), U.course_key(None, r.get("course"))}:
+            idx.setdefault((ck, r.get("type"), r.get("surface"), rec["hcap"]), []).append(rec)
     return idx
 
 
@@ -56,10 +57,15 @@ def _season(d, race_type):
 def find_renewals(card, idx):
     d = U.parse_date(card["date"])
     card_season = _season(d, card["type"])
-    keys = [U.course_key(card.get("course_id"), card.get("course")), U.course_key(None, card.get("course"))]
+    doy = d.timetuple().tm_yday
+    keys = [(ck, card["type"], card["surface"], bool(card["hcap"]))
+            for ck in (U.course_key(card.get("course_id"), card.get("course")), U.course_key(None, card.get("course")))]
     pool, seen = [], set()
     for k in keys:
         for r in idx.get(k, []):
+            g = abs(r["_doy"] - doy)
+            if min(g, 365 - g) > WINDOW_DAYS:
+                continue
             if r["race_id"] not in seen:
                 seen.add(r["race_id"])
                 pool.append(r)
