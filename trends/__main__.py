@@ -13,7 +13,7 @@ import os
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import engine, importers, profiles
+from . import engine, formtrends, importers, profiles
 from . import util as U
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -74,7 +74,9 @@ def _all_history(main_path):
 
 
 def cmd_cards(args):
-    idx = engine.index_history(_all_history(args.history))
+    hist = _all_history(args.history)
+    idx = engine.index_history(hist)
+    wf, tw = formtrends.load(), formtrends.trainer_winners(hist)
     regions = {r.strip().lower() for r in (args.regions or "").split(",") if r.strip()}
     by_date = defaultdict(list)
     for p in _expand(args.files):
@@ -88,7 +90,7 @@ def cmd_cards(args):
     for d, races in by_date.items():
         path = os.path.join(CARDS, f"{d}.json")
         old = _load(path, {}).get("results", {})
-        analysed = [profiles.attach(engine.analyse(r, idx), prof) for r in races]
+        analysed = [formtrends.attach(profiles.attach(engine.analyse(r, idx), prof), wf, tw) for r in races]
         meetings = defaultdict(list)
         for a in analysed:
             meetings[(a["course"], a["region"])].append(a)

@@ -74,6 +74,9 @@ select.tab option{color:var(--ink)}
 .st{display:inline-block;font:700 10px Inter,sans-serif;letter-spacing:.3px;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:2px}
 .st.F{background:#fde2d8;color:#8a2c14}.st.P{background:#fdf0cf;color:#7a5a12}.st.M{background:#e4ecf6;color:#2c4a73}.st.H{background:#e6efe9;color:#1d5a3c}
 .b.ip{background:#efe9f7;color:#5a3d86}
+.ft{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}.ft span{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 5px}
+.ft .y{background:var(--turf-soft);color:var(--turf)}.ft .x{background:#f1efea;color:#9a9890;text-decoration:line-through}
+.ins li.form{border-left-color:#8a7cb0;background:#f5f2fa}
 .pace{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;margin:0 0 6px;font-size:13px}
 .pace dt{font-weight:700;font-size:12px;padding-top:2px}.pace dd{margin:0}
 .pace .lane{display:flex;flex-wrap:wrap;gap:4px}.pace .lane span{background:var(--chip);border-radius:5px;padding:1px 7px}
@@ -279,7 +282,8 @@ function paceHTML(r){
 }
 function bodyHTML(r){
   const n = r.summary.n;
-  const ins = n ? `<h3>Trends from ${n} past renewal${n>1?"s":""}</h3><ul class="ins">${r.summary.insights.map(i=>`<li class="${i.strength}">${esc(i.txt)}</li>`).join("")}</ul>`
+  const ft = (r.form_trends||[]).map(t=>`<li class="form" title="Form trend: shown to help read the race, not part of the score">${esc(t)}</li>`).join("");
+  const ins = n ? `<h3>Trends from ${n} past renewal${n>1?"s":""}</h3><ul class="ins">${r.summary.insights.map(i=>`<li class="${i.strength}">${esc(i.txt)}</li>`).join("")}${ft}</ul>`
                 : `<h3>Trends</h3><p class="dim">No comparable race found here in previous seasons, so runners aren't scored.</p>`;
   const favTxt = x => x.fav_won ? "fav won" : (x.fav_pos ? `fav ${/^\d+$/.test(x.fav_pos) ? ordinal(x.fav_pos) : x.fav_pos}` : "");
   const ren = n ? `<h3>Past renewals</h3><div class="scroll"><table><thead><tr><th>Year</th><th>Winner</th><th class="num">Age</th><th class="num">Off top</th><th class="num hm">OR</th><th class="num">SP</th></tr></thead><tbody>
@@ -304,12 +308,12 @@ function bodyHTML(r){
       const isTop = t && x.score === t.score && t.score > 0;
       const lvl = !scored ? "" : (x.score >= r.max_core + 1 ? "s3" : x.score >= r.max_core && x.score > 0 ? "s2" : x.score > 0 ? "s1" : "s0");
       return `<tr class="${x.won?"won":""} ${isTop && t.clear ? "topfit" : ""} ${isTop && !t.clear ? "tied" : ""}"><td class="dim hm">${x.number??""}</td>
-        <td class="horse">${esc(x.horse)}${stb}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small>${bonus?`<div class="fit bm">${bonus}</div>`:""}</td>
+        <td class="horse">${esc(x.horse)}${stb}<small>${esc(x.trainer||"")} · ${esc(x.jockey||"")}</small>${(x.form_ticks||[]).length?`<div class="ft">${x.form_ticks.map(f=>`<span class="${f.ok?"y":"x"}">${f.ok?"✓":""} ${esc(f.txt)}</span>`).join("")}</div>`:""}${bonus?`<div class="fit bm">${bonus}</div>`:""}</td>
         ${cell(x,"age",x.age??"–")}${cell(x,"wt",wtTxt(x))}${cell(x,"or",x.or??"–")}
         <td class="dim hm">${esc(x.form||"")}</td><td class="hm"><div class="fit">${bonus||'<span class="dim">–</span>'}</div></td>
         <td class="num">${scored||x.score?`<span class="sc ${lvl}">${x.score}<i>/${max}</i></span>`:""}</td></tr>`;}).join("")}
     </tbody></table></div>
-    ${scored?`<p class="note"><span class="cell ok">green</span> fits the past winners' profile, <span class="cell no">red</span> doesn't. Score: 1 point each for age, weight${r.hcap?", rating":""}; +1 if the trainer, +1 if the jockey won a past running; +2 if the horse won it before. Style tags (Front / Prom / Mid / Held up) and in-running tags are for reading the race only and don't change the score. ${t && !t.clear ? `${t.tied} runners share the top score, so there's no clear fit.` : ""}</p>`:""}`;
+    ${scored?`<p class="note"><span class="cell ok">green</span> fits the past winners' profile, <span class="cell no">red</span> doesn't. Score: 1 point each for age, weight${r.hcap?", rating":""}; +1 if the trainer, +1 if the jockey won a past running; +2 if the horse won it before. Purple trend lines and the small ✓ form ticks under each horse (placed last time, trainer in form, etc.), style tags and in-running tags help read the race but don't change the score: backtested 2018–26 they find more winners but at prices the market has already cut. ${t && !t.clear ? `${t.tied} runners share the top score, so there's no clear fit.` : ""}</p>`:""}`;
   return `<div class="grid2"><div>${ins}${paceHTML(r)}${ren}</div><div>${runners}</div></div>`;
 }
 

@@ -227,7 +227,7 @@ def analyse(card, idx):
     summ = summarise(ren)
     runners, max_core = score_runners(card, summ, ren)
     public_ren = [{
-        "date": r["date"], "course": r["course"], "race_name": r["race_name"], "class": r.get("class"),
+        "race_id": r["race_id"], "date": r["date"], "course": r["course"], "race_name": r["race_name"], "class": r.get("class"),
         "dist_f": r["_dist"], "going": r.get("going"), "ran": r["ran"], "winner": r["win_horse"],
         "age": r["win_age"], "lbs": r["win_lbs"], "from_top": r["win_from_top"], "or": r["win_or"],
         "sp": r.get("win_sp") or U.frac_from_dec(r["win_dec"]), "trainer": r["win_trainer"],
