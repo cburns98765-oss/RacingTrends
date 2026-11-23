@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 docs/standalone.html
 tests/fixtures/
+.venv/

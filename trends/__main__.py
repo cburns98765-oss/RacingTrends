@@ -39,8 +39,7 @@ def cmd_history(args):
     new = importers.results_csv_to_races(paths)
     hist = importers.read_history(args.history)
     merged, added = importers.merge(hist, new)
-    os.makedirs(os.path.dirname(args.history), exist_ok=True)
-    importers.write_history(args.history, merged)
+    importers.write_history(args.history, merged)  # creates the folder if needed
     print(f"history: {len(new)} races read, {added} new, {len(merged)} total -> {args.history}")
 
 
@@ -51,13 +50,20 @@ def cmd_merge(args):
     for p in _expand(args.files):
         merged, added = importers.merge(merged, importers.read_history(p))
         total_added += added
-    os.makedirs(os.path.dirname(args.history), exist_ok=True)
     importers.write_history(args.history, merged)
     print(f"merge: +{total_added} races, {len(merged)} total -> {args.history}")
 
 
+def _all_history(main_path):
+    """The daily runs write races.csv.gz; the local backfill writes backfill.csv.gz. Read every file."""
+    rows = []
+    for p in sorted(set(glob.glob(os.path.join(os.path.dirname(os.path.abspath(main_path)), "*.csv.gz"))) | {main_path}):
+        rows, _ = importers.merge(rows, importers.read_history(p))
+    return rows
+
+
 def cmd_cards(args):
-    idx = engine.index_history(importers.read_history(args.history))
+    idx = engine.index_history(_all_history(args.history))
     regions = {r.strip().lower() for r in (args.regions or "").split(",") if r.strip()}
     by_date = defaultdict(list)
     for p in _expand(args.files):
