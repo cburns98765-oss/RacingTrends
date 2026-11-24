@@ -12,11 +12,14 @@ const COLS = ['id', 'date', 'course', 'time', 'horse', 'rule', 'side', 'price', 
 function doPost(e) {
   const row = JSON.parse(e.postData.contents);
   if (row.token !== TOKEN) return ContentService.createTextOutput('bad token');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
   const sh = SpreadsheetApp.getActive().getSheetByName(TAB);
-  const ids = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getValues().map(r => r[0]);
+  const ids = sh.getRange('A2:A').getValues().map(r => r[0]);
   const values = [COLS.map(c => row[c] === undefined ? '' : row[c])];
-  const i = ids.indexOf(row.id);
-  if (i >= 0) sh.getRange(i + 2, 1, 1, COLS.length).setValues(values);
-  else sh.appendRow(values[0]);
+  let i = ids.indexOf(row.id);
+  if (i < 0) i = ids.indexOf('');            // first empty row in column A
+  sh.getRange(i + 2, 1, 1, COLS.length).setValues(values);
+  lock.releaseLock();
   return ContentService.createTextOutput('ok');
 }
