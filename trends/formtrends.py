@@ -96,7 +96,7 @@ def attach(race, winner_form, tw):
             trends.append(f"All {len(ranks)} winners were among the top {top} on official rating")
             rules["or_rank"] = (top, f"Top {top} rated")
     days = [v["days"] for v in vals if v.get("days") is not None]
-    if len(days) >= MIN_N:
+    if len(days) >= MIN_N and max(days) <= 90:
         trends.append(f"Winners had run within {int(max(days))} days")
     race["form_trends"] = trends
     if not rules:

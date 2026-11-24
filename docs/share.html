@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Race graphics · Racing Trends</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<style>
+:root{--bg:#f4f1ea;--panel:#fff;--ink:#15201b;--muted:#66716b;--line:#e3ded2;--turf:#0f4d33;--gold:#c9962b;--chip:#efebe1;--radius:12px;
+  --shadow:0 1px 2px rgba(20,32,27,.06),0 4px 14px rgba(20,32,27,.05)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:0 18px}
+header{background:var(--turf);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.bar{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:24px;letter-spacing:.5px;text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap}
+.brand i{display:inline-block;width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--gold) 0 25%,#fff 0 50%,var(--gold) 0 75%,#fff 0)}
+.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto}
+.tab{color:#cfe3d8;padding:8px 14px;border-radius:999px;font-weight:600;white-space:nowrap;text-decoration:none}
+.tab:hover{color:#fff;background:rgba(255,255,255,.08)}.tab.on{background:#fff;color:var(--turf)}
+h1{font-family:"Barlow Condensed",sans-serif;font-size:34px;text-transform:uppercase;margin:22px 0 2px}
+.lead{color:var(--muted);max-width:820px;margin:0 0 16px}
+.panel{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+select,input{font:inherit;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;color:var(--ink)}
+button.b{border:0;border-radius:8px;padding:8px 14px;font-weight:600;background:var(--turf);color:#fff;cursor:pointer;font:600 14px Inter,sans-serif}
+button.b.ghost{background:var(--chip);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.thumb{width:100%;aspect-ratio:1080/1350;overflow:hidden;border-radius:10px;box-shadow:var(--shadow);position:relative;background:#0b3a26}
+.thumb .slide{transform-origin:0 0;position:absolute;top:0;left:0}
+.cap{display:flex;justify-content:space-between;align-items:center;margin:6px 2px 0;font-size:12px;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted)}
+
+/* ---------- slide design (1080 x 1350) ---------- */
+.slide{width:1080px;height:1350px;padding:84px 84px 72px;display:flex;flex-direction:column;font-family:Inter,sans-serif;position:relative;overflow:hidden}
+.t-green{background:radial-gradient(120% 80% at 100% 0%,#1d6a49 0%,#0f4d33 45%,#0a3524 100%);color:#fff}
+.t-dark{background:radial-gradient(120% 80% at 100% 0%,#2a2a26 0%,#161614 55%,#0c0c0b 100%);color:#fff}
+.t-cream{background:#f4efe3;color:#15201b}
+.slide .kick{font:700 30px "Barlow Condensed",sans-serif;letter-spacing:4px;text-transform:uppercase;color:var(--gold)}
+.slide .h{font:800 118px/0.92 "Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:1px;margin:18px 0 0}
+.slide .h.m{font-size:100px}
+.slide .sub{font:500 40px/1.3 Inter,sans-serif;opacity:.82;margin-top:26px}
+.slide .rule{height:6px;width:120px;background:var(--gold);margin:40px 0}
+.slide .meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:auto}
+.slide .meta span{font:600 28px Inter,sans-serif;border:2px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 24px}
+.t-cream .meta span{border-color:rgba(21,32,27,.2)}
+.slide .foot{display:flex;justify-content:space-between;align-items:center;font:600 24px Inter,sans-serif;opacity:.7;margin-top:auto;padding-top:28px;border-top:2px solid rgba(255,255,255,.18)}
+.t-cream .foot{border-top-color:rgba(21,32,27,.15)}
+.slide .ring{position:absolute;right:-180px;top:-180px;width:560px;height:560px;border-radius:50%;border:70px solid rgba(201,150,43,.12)}
+.slide .list{display:flex;flex-direction:column;gap:36px;margin:64px 0 40px}
+.slide .li{display:flex;gap:30px;align-items:flex-start;font:600 46px/1.22 Inter,sans-serif}
+.slide .li b{flex:none;width:72px;height:72px;border-radius:50%;background:var(--gold);color:#13241b;display:flex;align-items:center;justify-content:center;font:800 34px "Barlow Condensed",sans-serif}
+.slide .li.form b{background:rgba(255,255,255,.16);color:#fff}
+.t-cream .li.form b{background:#e5dfd0;color:#15201b}
+.slide table{width:100%;border-collapse:collapse;margin:56px 0 40px}
+.slide td{font:700 42px Inter,sans-serif;padding:30px 0;border-bottom:2px solid rgba(255,255,255,.14)}
+.t-cream td{border-bottom-color:rgba(21,32,27,.12)}
+.slide td.y{font:800 52px "Barlow Condensed",sans-serif;color:var(--gold);width:150px}
+.slide td.sp{text-align:right;font:800 54px "Barlow Condensed",sans-serif;width:170px}
+.slide td small{display:block;font:500 28px Inter,sans-serif;opacity:.65;margin-top:4px}
+.slide .verdict{font:700 50px/1.2 Inter,sans-serif;margin-top:60px;padding:40px 44px;border-radius:22px;background:rgba(255,255,255,.1)}
+.t-cream .verdict{background:#e9e2d2}
+.slide .lanes{display:flex;flex-direction:column;gap:44px;margin-top:70px}
+.slide .lane{display:grid;grid-template-columns:250px 1fr;gap:22px;align-items:start}
+.slide .lane .k{font:800 42px "Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:2px;color:var(--gold);padding-top:8px}
+.slide .lane .hs{display:flex;flex-wrap:wrap;gap:12px}
+.slide .lane .hs span{font:600 38px Inter,sans-serif;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 22px}
+.t-cream .lane .hs span{background:#e5dfd0}
+.slide .lane .hs em{font:500 36px Inter,sans-serif;opacity:.5}
+.slide .card{border-radius:28px;background:rgba(255,255,255,.08);padding:32px 36px;margin-top:30px;display:flex;gap:28px;align-items:center}
+.t-cream .card{background:#e9e2d2}
+.slide .card .sc{flex:none;width:170px;height:170px;border-radius:24px;background:var(--gold);color:#13241b;display:flex;flex-direction:column;align-items:center;justify-content:center;font:800 70px/1 "Barlow Condensed",sans-serif}
+.slide .card .sc small{font:700 24px Inter,sans-serif;opacity:.75;margin-top:6px}
+.slide .card .nm{font:800 64px/1 "Barlow Condensed",sans-serif;text-transform:uppercase}
+.slide .card .tj{font:500 30px Inter,sans-serif;opacity:.7;margin-top:8px}
+.slide .card .ok{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.slide .card .ok span{font:600 26px Inter,sans-serif;border-radius:8px;padding:6px 14px;background:rgba(255,255,255,.14)}
+.t-cream .card .ok span{background:#ddd5c2}
+.slide .body{display:flex;flex-direction:column;flex:1;min-height:0}
+.slide .body .meta{margin-top:auto}
+.slide .disc{font:500 26px/1.35 Inter,sans-serif;opacity:.6;margin-top:40px}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+  <a class="brand" href="index.html"><i></i>Racing Trends</a>
+  <nav class="tabs"><a class="tab" href="index.html">Cards</a><a class="tab" href="ew.html">Each-way</a><a class="tab on" href="share.html">Graphics</a></nav>
+</div></header>
+<main class="wrap">
+<h1>Race graphics</h1>
+<p class="lead">Pick a race to get a five-slide carousel for Instagram (1080 × 1350): the race, its key trends, past winners, the pace map and the best fits on the trends.
+Everything comes straight from the dashboard data, so nothing is made up. Download the slides as images, or export the JSON for the carousel app.</p>
+<div class="panel">
+  <div class="row">
+    <label>Day<select id="day"></select></label>
+    <label>Race <span style="font-weight:400">(biggest prize first)</span><select id="race"></select></label>
+    <label>Style<select id="theme"><option value="t-green">Turf green</option><option value="t-dark">Black</option><option value="t-cream">Cream</option></select></label>
+    <label>Handle / brand line<input id="handle" placeholder="@yourhandle"></label>
+    <label style="flex-direction:row;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="rg" checked> 18+ / gamble responsibly line</label>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="b" id="dlall">Download all slides (PNG)</button>
+    <button class="b ghost" id="json">Export carousel JSON</button>
+    <span class="note" id="status"></span>
+  </div>
+</div>
+<div class="grid" id="grid"></div>
+<p class="note" style="margin:14px 0 30px">"Best fits on the trends" are runners matching the profile of past winners. They are trends, not tips: backtests show the market already prices them in.</p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STYLE={F:"Front",P:"Prominent",M:"Mid-div",H:"Held up"};
+let RACES=[], CUR=null, SLIDES=[];
+
+function londonDate(off=0){return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London"}).format(new Date(Date.now()+off*864e5));}
+function niceDate(d){return new Date(d+"T12:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});}
+function distTxt(f){
+  if(!f) return ""; const m=Math.floor(f/8); let fr=f-m*8; const whole=Math.floor(fr+1e-6), half=fr-whole>=0.4;
+  return `${m?m+"m":""}${whole||half?`${whole||""}${half?"½":""}f`:""}`;
+}
+function prizeN(p){return +String(p||"").replace(/[^\d.]/g,"")||0;}
+async function loadDays(){
+  const days=[[londonDate(0),"Today"],[londonDate(1),"Tomorrow"]];
+  $("#day").innerHTML=days.map(([d,l])=>`<option value="${d}">${l} · ${d}</option>`).join("");
+  $("#day").onchange=loadRaces; await loadRaces();
+}
+async function loadRaces(){
+  RACES=[];
+  try{const j=await (await fetch(`data/cards/${$("#day").value}.json`,{cache:"no-store"})).json();
+    for(const m of j.meetings) for(const r of m.races) if((r.summary||{}).n>=3) RACES.push(r);}catch(e){}
+  RACES.sort((a,b)=>prizeN(b.prize)-prizeN(a.prize)||a.off.localeCompare(b.off));
+  $("#race").innerHTML=RACES.length?RACES.map((r,i)=>`<option value="${i}">${esc(r.off)} ${esc(r.course)} · ${esc(r.prize||"")} · ${esc(r.race_name)}</option>`).join(""):"<option>No races with trends</option>";
+  $("#race").onchange=()=>build(RACES[+$("#race").value]);
+  if(RACES.length) build(RACES[0]); else $("#grid").innerHTML="";
+}
+["#theme","#handle","#rg"].forEach(s=>$(s).addEventListener("input",()=>CUR&&build(CUR)));
+
+function topFits(r){
+  const rs=[...r.runners].sort((a,b)=>(b.score||0)-(a.score||0));
+  return rs.slice(0,3);
+}
+function foot(i,n){
+  const h=$("#handle").value.trim();
+  return `<div class="foot"><span>${esc(h)}</span><span>${$("#rg").checked?"18+ · Please gamble responsibly · ":""}${i}/${n}</span></div>`;
+}
+function build(r){
+  CUR=r; const th=$("#theme").value, N=5, s=r.summary||{insights:[]}, max=(r.max_core||0)+4;
+  const strong=s.insights.filter(i=>i.strength==="strong"), other=s.insights.filter(i=>i.strength!=="strong");
+  const lines=[...strong,...other].slice(0,5).map(i=>({txt:i.txt,form:false}));
+  (r.form_trends||[]).slice(0,Math.max(0,6-lines.length)).forEach(t=>lines.push({txt:t,form:true}));
+  const ren=(r.renewals||[]).slice(0,6);
+  const pace=r.pace, fits=topFits(r);
+  const meta=[distTxt(r.dist_f)||r.dist, r.class?`Class ${r.class}`:"", r.going, `${r.runners.length} runners`, r.prize].filter(Boolean);
+  SLIDES=[
+    {key:"cover",title:r.course,html:`<div class="ring"></div><div class="kick">${esc(niceDate(r.date))} · ${esc(r.off)}</div>
+      <div class="h">${esc(r.course.replace(/\s*\(AW\)/,""))}</div><div class="sub">${esc(r.race_name)}</div><div class="rule"></div>
+      <div class="sub" style="opacity:1;font-weight:700">The trends from ${s.n} past runnings</div>
+      <div class="meta" style="margin-bottom:0">${meta.map(m=>`<span>${esc(m)}</span>`).join("")}</div>`},
+    {key:"trends",title:"Key trends",html:`<div class="kick">${esc(r.course)} ${esc(r.off)}</div><div class="h m">Key trends</div>
+      <div class="list">${lines.map((l,i)=>`<div class="li ${l.form?"form":""}"><b>${i+1}</b><span>${esc(l.txt)}</span></div>`).join("")}</div>`},
+    {key:"winners",title:"Past winners",html:`<div class="kick">${esc(r.course)} ${esc(r.off)}</div><div class="h m">Past winners</div>
+      <table>${ren.map(x=>`<tr><td class="y">${esc(String(x.date).slice(0,4))}</td><td>${esc(x.winner)}<small>${esc(x.trainer||"")}${x.or?` · OR ${x.or}`:""}${x.age?` · ${x.age}yo`:""}</small></td><td class="sp">${esc(x.sp||"")}</td></tr>`).join("")}</table>`},
+    {key:"pace",title:"Pace map",html:`<div class="kick">${esc(r.course)} ${esc(r.off)}</div><div class="h m">Pace map</div>
+      ${pace?`<div class="verdict">${esc(pace.verdict)}</div><div class="lanes">${["F","P","M","H"].map(k=>`<div class="lane"><div class="k">${STYLE[k]}</div><div class="hs">${pace.groups[k].length?pace.groups[k].map(h=>`<span>${esc(h)}</span>`).join(""):"<em>None</em>"}</div></div>`).join("")}</div>
+      <div class="disc">Usual early position over each horse's last six runs.</div>`:`<div class="verdict">Not enough running-style history for this field.</div>`}`},
+    {key:"fits",title:"Best trend fits",html:`<div class="kick">${esc(r.course)} ${esc(r.off)}</div><div class="h m">Best trend fits</div>
+      ${fits.map(x=>`<div class="card"><div class="sc">${x.score??0}<small>of ${max}</small></div><div><div class="nm">${esc(x.horse)}</div><div class="tj">${[x.trainer,x.jockey].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="ok">${(x.flags||[]).filter(f=>f.ok).map(f=>`<span>✓ ${esc(f.txt)}</span>`).join("")}${(x.form_ticks||[]).filter(f=>f.ok).map(f=>`<span>✓ ${esc(f.txt)}</span>`).join("")}</div></div></div>`).join("")}
+      <div class="disc">Score = how closely each horse matches past winners' age, weight, rating, trainer, jockey and course record. Trends, not tips.</div>`},
+  ];
+  $("#grid").innerHTML=SLIDES.map((sl,i)=>`<div><div class="thumb"><div class="slide ${th}" id="sl${i}"><div class="body">${sl.html}</div>${foot(i+1,N)}</div></div>
+    <div class="cap"><span>${i+1}. ${esc(sl.title)}</span><button class="b ghost" data-i="${i}">PNG</button></div></div>`).join("");
+  shrink(); fit(); document.querySelectorAll(".cap button").forEach(b=>b.onclick=()=>dl(+b.dataset.i));
+}
+function shrink(){
+  // scale a slide's content down until it fits above the footer (big fields, long trend lists)
+  document.querySelectorAll(".slide").forEach(sl=>{
+    const body=sl.querySelector(".body"), f=sl.querySelector(".foot");
+    const avail=1350-84-72-f.offsetHeight-40;
+    body.style.flex="none"; body.style.zoom=1;
+    const h=()=>body.getBoundingClientRect().height/(sl.getBoundingClientRect().height/1350);
+    let z=1;
+    while(h()>avail && z>0.5){ z-=0.03; body.style.zoom=z.toFixed(2); }
+    body.style.flex="";
+  });
+}
+function fit(){document.querySelectorAll(".thumb").forEach(t=>{t.querySelector(".slide").style.transform=`scale(${t.clientWidth/1080})`;});}
+window.addEventListener("resize",fit);
+function fname(i){return `${CUR.date}_${CUR.course.replace(/\W+/g,"-")}_${CUR.off.replace(":","")}_${i+1}-${SLIDES[i].key}.png`.toLowerCase();}
+async function dl(i){
+  const el=document.getElementById("sl"+i), tf=el.style.transform; el.style.transform="none";
+  try{
+    await document.fonts.ready;
+    const url=await htmlToImage.toPng(el,{width:1080,height:1350,pixelRatio:1,cacheBust:true});
+    const a=document.createElement("a"); a.href=url; a.download=fname(i); a.click();
+  }catch(e){$("#status").textContent="Couldn't render the image: "+e;}
+  el.style.transform=tf;
+}
+$("#dlall").onclick=async()=>{for(let i=0;i<SLIDES.length;i++){$("#status").textContent=`Rendering ${i+1}/${SLIDES.length}…`;await dl(i);await new Promise(r=>setTimeout(r,400));}$("#status").textContent="Done.";};
+$("#json").onclick=()=>{
+  const r=CUR, s=r.summary||{insights:[]};
+  const data={source:"Racing Trends",race:{date:r.date,off:r.off,course:r.course,name:r.race_name,distance:distTxt(r.dist_f)||r.dist,class:r.class,going:r.going,prize:r.prize,runners:r.runners.length},
+    slides:[
+      {type:"cover",kicker:`${niceDate(r.date)} · ${r.off}`,title:r.course,subtitle:r.race_name,note:`The trends from ${s.n} past runnings`},
+      {type:"list",title:"Key trends",items:[...s.insights.map(i=>i.txt),...(r.form_trends||[])]},
+      {type:"table",title:"Past winners",rows:(r.renewals||[]).slice(0,6).map(x=>({year:String(x.date).slice(0,4),winner:x.winner,trainer:x.trainer,sp:x.sp,or:x.or,age:x.age}))},
+      {type:"pace",title:"Pace map",verdict:r.pace?.verdict||null,groups:r.pace?Object.fromEntries(Object.entries(r.pace.groups).map(([k,v])=>[STYLE[k],v])):null},
+      {type:"cards",title:"Best fits on the trends",items:topFits(r).map(x=>({horse:x.horse,score:x.score,max:(r.max_core||0)+4,trainer:x.trainer,jockey:x.jockey,fits:[...(x.flags||[]).filter(f=>f.ok).map(f=>f.txt),...(x.form_ticks||[]).filter(f=>f.ok).map(f=>f.txt)]})),note:"Trends, not tips."}]};
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+  a.download=fname(0).replace(/_1-cover\.png$/,".json"); a.click();
+};
+loadDays();
+</script>
+</body>
+</html>

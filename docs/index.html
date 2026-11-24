@@ -193,7 +193,7 @@ function renderTabs(){
   let h = `<button class="tab ${S.view===t?"on":""}" data-v="${t}">Today</button>
            <button class="tab ${S.view===tm?"on":""}" data-v="${tm}">Tomorrow</button>`;
   if (past.length) h += `<select class="tab ${past.includes(S.view)?"on":""}" id="past"><option value="">Past days</option>${past.map(d=>`<option value="${d}" ${d===S.view?"selected":""}>${nice(d)}</option>`).join("")}</select>`;
-  h += `<button class="tab ${S.view==="perf"?"on":""}" data-v="perf">Performance</button>`;
+  h += `<button class="tab ${S.view==="perf"?"on":""}" data-v="perf">Performance</button><a class="tab" href="ew.html" style="text-decoration:none">Each-way</a><a class="tab" href="share.html" style="text-decoration:none">Graphics</a>`;
   $("#tabs").innerHTML = h;
   $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => { location.hash = b.dataset.v; });
   const p = $("#past"); if (p) p.onchange = () => p.value && (location.hash = p.value);
