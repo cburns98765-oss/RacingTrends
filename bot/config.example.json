@@ -1,0 +1,10 @@
+{
+  "username": "YOUR_BETFAIR_USERNAME",
+  "app_key": "YOUR_DELAYED_APP_KEY",
+  "certs_folder": "certs",
+  "stake": 20,
+  "commission": 0.05,
+  "poll_seconds": 5,
+  "sheet_webhook": "",
+  "sheet_token": ""
+}

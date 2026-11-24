@@ -5,3 +5,6 @@ __pycache__/
 docs/standalone.html
 tests/fixtures/
 .venv/
+bot/config.json
+bot/certs/
+bot/logs/

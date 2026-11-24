@@ -1,0 +1,152 @@
+course,region,kind,races,bias
+Ayr,gb,Chase,320.0,0.92
+Bangor,gb,Chase,353.0,0.931
+Carlisle,gb,Chase,343.0,0.98
+Cartmel,gb,Chase,281.0,0.979
+Cheltenham,gb,Chase,566.0,1.222
+Chepstow,gb,Chase,409.0,1.116
+Doncaster,gb,Chase,299.0,0.995
+Exeter,gb,Chase,398.0,1.074
+Fakenham,gb,Chase,289.0,0.819
+Ffos Las,gb,Chase,361.0,0.941
+Fontwell,gb,Chase,550.0,0.901
+Hereford,gb,Chase,287.0,0.97
+Hexham,gb,Chase,417.0,1.014
+Huntingdon,gb,Chase,416.0,0.945
+Kelso,gb,Chase,418.0,0.957
+Kempton,gb,Chase,324.0,1.099
+Leicester,gb,Chase,301.0,0.908
+Ludlow,gb,Chase,388.0,0.988
+Market Rasen,gb,Chase,526.0,0.951
+Newbury,gb,Chase,306.0,0.97
+Newcastle,gb,Chase,308.0,1.008
+Newton Abbot,gb,Chase,434.0,0.848
+Perth,gb,Chase,393.0,1.018
+Plumpton,gb,Chase,382.0,0.874
+Sandown,gb,Chase,293.0,1.024
+Sedgefield,gb,Chase,446.0,0.998
+Southwell,gb,Chase,440.0,0.936
+Stratford,gb,Chase,482.0,1.032
+Taunton,gb,Chase,265.0,0.954
+Uttoxeter,gb,Chase,600.0,1.087
+Warwick,gb,Chase,473.0,1.042
+Wetherby,gb,Chase,409.0,0.938
+Wincanton,gb,Chase,406.0,0.952
+Worcester,gb,Chase,462.0,1.042
+Chelmsford City,gb,Flat AW,3915.0,1.124
+Kempton,gb,Flat AW,4845.0,1.135
+Lingfield,gb,Flat AW,4528.0,0.912
+Newcastle,gb,Flat AW,4625.0,0.935
+Southwell,gb,Flat AW,3782.0,0.94
+Wolverhampton,gb,Flat AW,6797.0,0.956
+Ascot,gb,Flat turf,1292.0,0.995
+Ayr,gb,Flat turf,1369.0,0.922
+Bath,gb,Flat turf,1522.0,0.946
+Beverley,gb,Flat turf,1431.0,1.071
+Brighton,gb,Flat turf,1433.0,0.848
+Carlisle,gb,Flat turf,893.0,0.997
+Catterick,gb,Flat turf,1277.0,1.088
+Chepstow,gb,Flat turf,1077.0,1.017
+Chester,gb,Flat turf,1068.0,1.038
+Doncaster,gb,Flat turf,1850.0,0.959
+Down Royal,gb,Flat turf,378.0,0.752
+Epsom Downs,gb,Flat turf,714.0,1.02
+Ffos Las,gb,Flat turf,586.0,0.829
+Goodwood,gb,Flat turf,1382.0,0.922
+Hamilton,gb,Flat turf,1320.0,0.913
+Haydock,gb,Flat turf,1637.0,0.921
+Leicester,gb,Flat turf,1372.0,0.993
+Lingfield,gb,Flat turf,958.0,1.09
+Musselburgh,gb,Flat turf,1196.0,0.976
+Newbury,gb,Flat turf,1383.0,1.048
+Newmarket,gb,Flat turf,2973.0,0.947
+Nottingham,gb,Flat turf,1587.0,1.006
+Pontefract,gb,Flat turf,1190.0,1.006
+Redcar,gb,Flat turf,1367.0,1.13
+Ripon,gb,Flat turf,1193.0,1.038
+Salisbury,gb,Flat turf,1102.0,1.024
+Sandown,gb,Flat turf,1045.0,0.869
+Thirsk,gb,Flat turf,1230.0,1.212
+Windsor,gb,Flat turf,1887.0,1.025
+Yarmouth,gb,Flat turf,1739.0,0.926
+York,gb,Flat turf,1320.0,1.159
+Aintree,gb,Hurdle,266.0,0.928
+Ascot,gb,Hurdle,261.0,0.998
+Ayr,gb,Hurdle,498.0,0.963
+Bangor,gb,Hurdle,519.0,1.134
+Carlisle,gb,Hurdle,425.0,0.925
+Cartmel,gb,Hurdle,349.0,0.9
+Catterick,gb,Hurdle,353.0,1.013
+Cheltenham,gb,Hurdle,503.0,1.052
+Chepstow,gb,Hurdle,624.0,1.138
+Doncaster,gb,Hurdle,481.0,1.022
+Down Royal,gb,Hurdle,335.0,1.14
+Downpatrick,gb,Hurdle,468.0,1.039
+Exeter,gb,Hurdle,579.0,1.199
+Fakenham,gb,Hurdle,401.0,0.846
+Ffos Las,gb,Hurdle,541.0,0.982
+Fontwell,gb,Hurdle,838.0,0.93
+Haydock,gb,Hurdle,312.0,0.946
+Hereford,gb,Hurdle,502.0,0.945
+Hexham,gb,Hurdle,578.0,0.966
+Huntingdon,gb,Hurdle,697.0,0.949
+Kelso,gb,Hurdle,512.0,0.925
+Kempton,gb,Hurdle,436.0,0.976
+Lingfield,gb,Hurdle,251.0,0.846
+Ludlow,gb,Hurdle,567.0,1.029
+Market Rasen,gb,Hurdle,855.0,0.914
+Musselburgh,gb,Hurdle,416.0,0.983
+Newbury,gb,Hurdle,394.0,1.123
+Newcastle,gb,Hurdle,421.0,0.982
+Newton Abbot,gb,Hurdle,686.0,0.946
+Perth,gb,Hurdle,613.0,0.931
+Plumpton,gb,Hurdle,652.0,0.96
+Sandown,gb,Hurdle,311.0,1.001
+Sedgefield,gb,Hurdle,706.0,1.03
+Southwell,gb,Hurdle,752.0,0.96
+Stratford,gb,Hurdle,628.0,0.98
+Taunton,gb,Hurdle,598.0,1.113
+Uttoxeter,gb,Hurdle,1092.0,0.973
+Warwick,gb,Hurdle,653.0,1.072
+Wetherby,gb,Hurdle,569.0,1.017
+Wincanton,gb,Hurdle,571.0,1.099
+Worcester,gb,Hurdle,795.0,0.947
+Fairyhouse,ire,Chase,417.0,0.976
+Limerick,ire,Chase,278.0,0.9
+Punchestown,ire,Chase,469.0,1.017
+Thurles,ire,Chase,265.0,1.02
+Tramore,ire,Chase,265.0,1.022
+Wexford,ire,Chase,285.0,0.9
+Dundalk,ire,Flat AW,3440.0,1.004
+Bellewstown,ire,Flat turf,387.0,0.96
+Cork,ire,Flat turf,747.0,1.028
+Curragh,ire,Flat turf,1817.0,0.977
+Fairyhouse,ire,Flat turf,511.0,1.043
+Galway,ire,Flat turf,494.0,0.948
+Gowran Park,ire,Flat turf,984.0,1.09
+Killarney,ire,Flat turf,498.0,0.933
+Leopardstown,ire,Flat turf,1275.0,0.888
+Limerick,ire,Flat turf,417.0,0.945
+Listowel,ire,Flat turf,322.0,1.072
+Naas,ire,Flat turf,1017.0,1.053
+Navan,ire,Flat turf,816.0,1.02
+Roscommon,ire,Flat turf,438.0,1.041
+Tipperary,ire,Flat turf,454.0,0.931
+Ballinrobe,ire,Hurdle,416.0,0.843
+Clonmel,ire,Hurdle,527.0,1.135
+Cork,ire,Hurdle,568.0,1.13
+Fairyhouse,ire,Hurdle,687.0,1.029
+Galway,ire,Hurdle,319.0,1.008
+Gowran Park,ire,Hurdle,311.0,1.111
+Kilbeggan,ire,Hurdle,449.0,0.78
+Killarney,ire,Hurdle,268.0,1.183
+Leopardstown,ire,Hurdle,313.0,1.098
+Limerick,ire,Hurdle,680.0,0.928
+Listowel,ire,Hurdle,287.0,1.024
+Naas,ire,Hurdle,328.0,1.355
+Navan,ire,Hurdle,425.0,0.934
+Punchestown,ire,Hurdle,865.0,0.976
+Sligo,ire,Hurdle,291.0,0.841
+Thurles,ire,Hurdle,406.0,1.012
+Tramore,ire,Hurdle,420.0,0.89
+Wexford,ire,Hurdle,462.0,0.802

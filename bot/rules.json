@@ -1,0 +1,23 @@
+{
+  "front_runner_course_bias": {
+    "enabled": true,
+    "about": "Back the only habitual front-runner in a race at a course where front-runners win more than average. Paper bet struck in the last 5 minutes before the off if the best back price is between min_price and max_price.",
+    "min_bias": 1.05,
+    "min_price": 3.0,
+    "max_price": 15.0,
+    "window_minutes": 5
+  },
+  "trend_top_pick": {
+    "enabled": true,
+    "about": "Back the dashboard's clear top pick on the trends (5/7 or 5/6 and above) in the last 5 minutes before the off.",
+    "min_score": 5,
+    "min_price": 2.0,
+    "max_price": 21.0,
+    "window_minutes": 5
+  },
+  "folds_when_short_lay": {
+    "enabled": true,
+    "about": "Lay in running a horse that has traded 1.5 or shorter and lost at least half the time, once its lay price is at or below lay_at_or_below. Needs the LIVE app key to mean anything: the delayed key's prices lag the race.",
+    "lay_at_or_below": 1.5
+  }
+}
