@@ -105,7 +105,7 @@ items = [
     ("Return on stakes", "=IF(B6=0,0,B7/B6)", '0.0%;-0.0%'),
     ("Back bets profit / loss (£)", f'=SUMIFS({J},{E},"Back")', '£#,##0.00;-£#,##0.00'),
     ("Lay bets profit / loss (£)", f'=SUMIFS({J},{E},"Lay")', '£#,##0.00;-£#,##0.00'),
-    ("Biggest open lay liability (£)", f"=MAX(Bets!$K$2:$K${N+1})", '£#,##0.00'),
+    ("Biggest open lay liability (£)", f'=IFERROR(MAXIFS(Bets!$K$2:$K${N+1},Bets!$H$2:$H${N+1},""),0)', '£#,##0.00'),
 ]
 for k, (lab, f, fmt) in enumerate(items, start=3):
     summ.cell(k, 1, lab).font = BASE
