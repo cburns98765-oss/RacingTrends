@@ -203,6 +203,8 @@ def main():
             runner = next((r for r in b.runners if r.selection_id == s["selection_id"]), None)
             if runner is None:
                 continue
+            if not b.inplay and b.status == "OPEN" and best(runner.ex.available_to_back):
+                s["preoff_price"] = best(runner.ex.available_to_back)   # last price before the off
             if row is None and b.status == "OPEN" and runner.status == "ACTIVE":
                 mins = (s["start"] - now).total_seconds() / 60
                 price = R.check_trigger(s, best(runner.ex.available_to_back), best(runner.ex.available_to_lay), b.inplay, mins)

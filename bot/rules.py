@@ -80,6 +80,16 @@ def build_selections(card, bias_rows, rules):
                             "min_price": r.get("min_price", 2.0), "max_price": r.get("max_price", 21.0),
                             "window_min": r.get("window_minutes", 5),
                             "reason": f"Clear top pick on the trends ({tp['score']}/{(race.get('max_core') or 0) + 4})"})
+            r = rules.get("comes_from_behind_back", {})
+            if r.get("enabled"):
+                for x in race.get("runners", []):
+                    ip = (x.get("profile") or {}).get("ip") or [0, 0, 0, 0]
+                    comebacks = ip[3] if len(ip) > 3 else 0
+                    if comebacks >= r.get("min_comebacks", 1):
+                        out.append({**base, "horse": x["horse"], "rule": "comes_from_behind_back", "side": "BACK",
+                                    "phase": "in_play", "drift_x": r.get("drift_multiple", 2.0),
+                                    "max_price": r.get("max_price", 30.0), "min_price": 1.01,
+                                    "reason": f"Has won {comebacks}x after drifting to double its SP in running"})
             r = rules.get("folds_when_short_lay", {})
             if r.get("enabled"):
                 for x in race.get("runners", []):
@@ -105,7 +115,13 @@ def check_trigger(sel, best_back, best_lay, inplay, minutes_to_off):
             return None
         if sel["side"] == "LAY" and best_lay and best_lay <= sel["max_price"]:
             return best_lay
-        if sel["side"] == "BACK" and best_back and best_back >= sel.get("min_price", 1.01):
+        if sel["side"] == "BACK" and best_back:
+            ref = sel.get("preoff_price")
+            if sel.get("drift_x"):
+                if not ref or best_back < ref * sel["drift_x"] or best_back > sel.get("max_price", 1000):
+                    return None
+            elif best_back < sel.get("min_price", 1.01):
+                return None
             return best_back
     return None
 
