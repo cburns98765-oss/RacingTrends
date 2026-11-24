@@ -203,7 +203,32 @@ def _write_performance():
     _save(os.path.join(SITE, "data", "performance.json"), perf)
 
 
+def _write_sheet_csv():
+    """Today's and later cards as Date,Course,Time,Horse for the bet-tracker Google Sheet (IMPORTDATA)."""
+    import csv
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("Europe/London")).strftime("%Y-%m-%d")
+    rows = []
+    for f in sorted(glob.glob(os.path.join(CARDS, "*.json"))):
+        d = os.path.basename(f)[:10]
+        if d < today:
+            continue
+        with open(f, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        for m in doc.get("meetings", []):
+            for r in m.get("races", []):
+                for x in r.get("runners", []):
+                    rows.append((d, r.get("course") or m.get("course"), r.get("off", ""), x.get("horse", "")))
+    rows.sort(key=lambda t: (t[0], t[1], t[2], t[3]))
+    with open(os.path.join(SITE, "data", "sheet_cards.csv"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["Date", "Course", "Time", "Horse"])
+        w.writerows(rows)
+
+
 def _write_index():
+    _write_sheet_csv()
     files = sorted(glob.glob(os.path.join(CARDS, "*.json")))
     for old in files[:-KEEP_DAYS]:
         os.remove(old)
