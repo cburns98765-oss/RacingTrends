@@ -115,17 +115,28 @@ def todays_markets(trading):
 
 
 def match(sel, markets):
+    """Find the Betfair market and runner for a selection. Returns (market, selection_id, problem)."""
+    import difflib
     v = R.venue_key(sel["course"])
     hh, mm = map(int, sel["off"].split(":"))
-    for m in markets:
-        if m["venue"] != v:
-            continue
-        mins = abs((m["start"].hour * 60 + m["start"].minute) - (hh * 60 + mm))
-        if mins <= 3:
-            sid = m["runners"].get(R.norm(sel["horse"]))
-            if sid:
-                return m, sid
-    return None, None
+    at_venue = [m for m in markets if m["venue"] == v]
+    if not at_venue:
+        return None, None, f"no Betfair markets at {sel['course']} (venues listed: {sorted({m['venue'] for m in markets})[:12]})"
+    want = R.norm(sel["horse"])
+    # nearest race to the card time that has this horse in it (start times can differ by a few minutes)
+    cands = sorted(at_venue, key=lambda m: abs((m["start"].hour * 60 + m["start"].minute) - (hh * 60 + mm)))
+    for m in cands:
+        gap = abs((m["start"].hour * 60 + m["start"].minute) - (hh * 60 + mm))
+        if gap > 15:
+            break
+        sid = m["runners"].get(want)
+        if not sid:
+            close = difflib.get_close_matches(want, list(m["runners"]), n=1, cutoff=0.85)
+            sid = m["runners"][close[0]] if close else None
+        if sid:
+            return m, sid, None
+    times = ", ".join(sorted(m["start"].strftime("%H:%M") for m in at_venue))
+    return None, None, f"{sel['horse']} not found near {sel['off']} at {sel['course']} (Betfair race times there: {times})"
 
 
 def best(prices):
@@ -149,17 +160,23 @@ def main():
     trading = login(cfg)
     markets = todays_markets(trading)
     watch = []
+    now_hm = datetime.now(LON).strftime("%H:%M")
+    already = 0
     for s in sels:
-        m, sid = match(s, markets)
-        if m and m["start"] < datetime.now(LON) - timedelta(minutes=20):
-            continue  # race already run
+        if s["off"] < (datetime.now(LON) - timedelta(minutes=10)).strftime("%H:%M"):
+            already += 1  # race already run
+            continue
+        m, sid, problem = match(s, markets)
         if not m:
-            log(f"  no Betfair market found for {s['horse']} ({s['off']} {s['course']})")
+            log(f"  skipped: {problem}")
             continue
         s.update(market_id=m["market_id"], selection_id=sid, start=m["start"],
                  id=f"{today}|{s['off']}|{R.norm(s['course'])}|{R.norm(s['horse'])}|{s['rule']}")
         watch.append(s)
-    log(f"watching {len(watch)} horses in {len({s['market_id'] for s in watch})} markets")
+    log(f"{already} selections were in races already run")
+    log(f"watching {len(watch)} horses in {len({s['market_id'] for s in watch})} markets:")
+    for s in watch:
+        log(f"  {s['start'].strftime('%H:%M')} {s['course']:18} {s['horse']:22} {s['side']} {s['rule']}")
 
     os.makedirs(os.path.join(HERE, "logs"), exist_ok=True)
     book = Book(os.path.join(HERE, "logs", f"paper_bets_{today}.csv"))
