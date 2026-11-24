@@ -47,6 +47,13 @@ for i in range(2, N + 2):
     lists[f"AO{i}"] = (f'=IF(Bets!$C{i}="","",IFERROR(TRANSPOSE(FILTER(Cards!$D$2:$D$5000,'
                        f'Cards!$A$2:$A$5000=Bets!$A{i},Cards!$B$2:$B$5000=Bets!$B{i},Cards!$C$2:$C$5000=Bets!$C{i})),""))')
 
+for col in range(1, 21):
+    lists.cell(1, col).number_format = "dd/mm/yyyy"
+for i in range(2, N + 2):
+    for col in range(21, 41):
+        lists.cell(i, col).number_format = "hh:mm"
+for i in range(2, 5001):
+    cards.cell(i, 1).number_format = "dd/mm/yyyy"; cards.cell(i, 3).number_format = "hh:mm"
 lists["CJ1"] = "End of list area"             # makes the tab wide enough for 46 runners
 lists[f"A{N+2}"] = "Helper lists for the dropdowns in Bets (one row per bet row). Do not edit."
 
