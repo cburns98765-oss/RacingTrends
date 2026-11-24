@@ -81,11 +81,20 @@ def login(cfg):
     trading = betfairlightweight.APIClient(cfg["username"], pw, app_key=cfg["app_key"],
                                            certs=certs if os.path.isdir(certs) else None)
     if os.path.isdir(certs) and any(f.endswith(".crt") for f in os.listdir(certs)):
-        trading.login()
-        log("logged in with certificate")
-    else:
+        try:
+            trading.login()
+            log("logged in with certificate")
+            return trading
+        except Exception as e:
+            log(f"certificate login failed ({e}); trying normal login instead")
+            log("  (check client-2048.crt is uploaded under Automated Betting Program Access on Betfair's My Security page)")
+    try:
         trading.login_interactive()
-        log("logged in (interactive, no certificate found)")
+        log("logged in with username and password")
+    except Exception as e:
+        log(f"login failed: {e}")
+        log("  check the username in config.json (it's case-sensitive) and your password")
+        sys.exit(1)
     return trading
 
 
